@@ -21,6 +21,8 @@ docs.zip
 .ruff_cache
 archive.zip
 
+.DS_Store
+
 src/.env.prod
 
 # vim temporary files
