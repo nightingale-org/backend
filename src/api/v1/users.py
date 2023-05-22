@@ -53,7 +53,7 @@ async def get_user_by_account(
 
 
 @router.delete(
-    "/{user_id}",
+    "/{user_id}/",
     status_code=200,
     summary="Get user",
     description="Delete user",
@@ -66,7 +66,7 @@ async def delete_user(
     return await user_service.delete_user(user_id)
 
 
-@router.post("/link", status_code=200, summary="Link account")
+@router.post("/link/", status_code=200, summary="Link account")
 async def link_account(
     account: AccountScheme,
     user_service: Annotated[UserService, Depends(DependencyStub("user_service"))],
