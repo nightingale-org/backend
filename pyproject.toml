@@ -1,0 +1,93 @@
+[tool.poetry]
+name = "nightingale-backend"
+version = "0.1.0"
+description = ""
+authors = ["GLEF1X <glebgar567@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.95.1"
+uvicorn = "^0.22.0"
+python-dateutil = "^2.8.2"
+python-dotenv = "^1.0.0"
+httpx = "^0.24.0"
+itsdangerous = "^2.1.2"
+fasteners = "^0.18"
+orjson = "^3.8.11"
+email-validator = "^2.0.0.post2"
+beanie = "^1.19.0"
+starlette-context = "^0.3.6"
+pyjwt = { version = "^2.7.0", extras = ["crypto"]}
+structlog = "^23.1.0"
+colorama = "^0.4.6"
+
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.2.0"
+ruff = "^0.0.265"
+isort = "^5.12.0"
+pytest = "^7.3.1"
+pytest-anyio = "^0.0.0"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = [
+    "tests",
+]
+
+[tool.ruff]
+select = [
+    "E", # pycodestyle errors
+    "W", # pycodestyle warnings
+    "F", # pyflakes
+    # "I",  # isort
+    "C", # flake8-comprehensions
+    "B", # flake8-bugbear
+]
+ignore = [
+    "E501", # line too long, handled by black
+    "B008", # do not perform function calls in argument defaults
+    "C901", # too complex
+]
+
+[tool.ruff.isort]
+known-third-party = ["fastapi", "pydantic", "starlette"]
+
+[tool.mypy]
+plugins = "pydantic.mypy"
+python_version = "3.11"
+show_error_codes = true
+show_error_context = true
+pretty = true
+ignore_missing_imports = false
+warn_unused_configs = true
+disallow_subclassing_any = true
+disallow_any_generics = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+follow_imports_for_stubs = true
+namespace_packages = true
+show_absolute_path = true
+
+[[tool.mypy.overrides]]
+module = [
+    "aiofiles",
+    "async_lru",
+    "uvloop",
+    "redis.*",
+    "babel.*",
+]
+ignore_missing_imports = true
+disallow_untyped_defs = true
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
