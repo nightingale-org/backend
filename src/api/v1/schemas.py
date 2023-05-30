@@ -11,7 +11,7 @@ from src.utils.pydantic_utils import AllOptional
 
 
 class UserInputSchema(BaseModel):
-    name: str = None
+    username: str | None
     email: EmailStr
     email_verified_at: datetime | None
     image: str = None
@@ -24,9 +24,13 @@ class UserUpdateSchema(UserInputSchema, metaclass=AllOptional):
     pass
 
 
+class ExistsResponseSchema(BaseModel):
+    exists: bool
+
+
 class UserOutputSchema(BaseModel):
     id: str
-    name: str | None
+    username: str | None
     email: EmailStr
     email_verified: datetime | None
     image: str = None

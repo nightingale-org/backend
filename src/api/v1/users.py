@@ -7,6 +7,7 @@ from starlette.status import HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
 from src.api.auth_dependency import protected_route
 from src.api.v1.schemas import (
     AccountScheme,
+    ExistsResponseSchema,
     UserInputSchema,
     UserOutputSchema,
     UserUpdateSchema,
@@ -42,6 +43,14 @@ async def get_users_to_chat_with(
     return parse_obj_as(
         list[UserOutputSchema], await user_service.get_users_to_chat_with(email)
     )
+
+
+@router.get("/availability/{username}/", response_model=ExistsResponseSchema)
+async def check_if_username_is_occupied(
+    username: str,
+    user_service: Annotated[UserService, Depends(DependencyStub("user_service"))],
+):
+    return {"exists": await user_service.does_user_exists(username)}
 
 
 @router.patch(

@@ -6,9 +6,11 @@ from typing import List, Optional
 from beanie import BackLink, Document, Indexed, Link, PydanticObjectId
 from pydantic import EmailStr, Field
 
+from src.utils.pydantic_utils import Username
+
 
 class User(Document):
-    name: Optional[Indexed(str, unique=True)] = None
+    username: Optional[Indexed(Username, unique=True)] = None
     email: Optional[Indexed(EmailStr, unique=True)] = None
     email_verified_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     image: Optional[str] = None

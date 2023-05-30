@@ -1,3 +1,4 @@
+import re
 from typing import Any, Dict, Optional, Type, TypeVar
 
 import pydantic
@@ -5,6 +6,8 @@ from beanie import Document
 from pydantic.fields import ModelField
 
 _T = TypeVar("_T", bound=Any)
+
+USERNAME_REGEXP = re.compile(r"^[a-z0-9_]+$", re.IGNORECASE)
 
 
 def map_raw_data_to_pydantic_fields(
@@ -31,3 +34,34 @@ class AllOptional(pydantic.main.ModelMetaclass):
                 annotations[field] = Optional[annotations[field]]
         namespaces["__annotations__"] = annotations
         return super().__new__(cls, name, bases, namespaces, **kwargs)
+
+
+class Username(str):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def __modify_schema__(cls, field_schema: Dict[str, Any]) -> None:
+        field_schema.update(
+            pattern="^[A-Z]{1,2}[0-9][A-Z0-9]? ?[0-9][A-Z]{2}$",
+            examples=["gleb32222", "GLEF1X"],
+            min_length=5,
+        )
+
+    @classmethod
+    def validate(cls, v: str) -> "Username":
+        if not isinstance(v, str):
+            raise TypeError("string required")
+
+        if len(v) < 5:
+            raise ValueError("username is too short")
+
+        m = USERNAME_REGEXP.fullmatch(v.upper())
+        if not m:
+            raise ValueError("invalid username format")
+
+        return cls(v)
+
+    def __repr__(self) -> str:
+        return f"Username({super().__repr__()})"

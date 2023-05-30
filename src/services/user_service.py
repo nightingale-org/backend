@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 class UserService:
     async def create_user(self, **data: Any) -> User:
-        return await User.create(User(**data))
+        return await User(**data).create()
 
     async def get_user_by_filters(self, **filters: Any) -> User | None:
         provider_account_id = filters.pop("provider_account_id", None)
@@ -25,6 +25,9 @@ class UserService:
             )
 
         return await User.find_one(filters, fetch_links=True)
+
+    async def does_user_exists(self, username: str) -> bool:
+        return await User.find(User.username == username).limit(1).exists()
 
     async def get_user_by_id(self, user_id: str) -> User | None:
         return await User.get(user_id, fetch_links=True)
