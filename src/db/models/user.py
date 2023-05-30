@@ -5,7 +5,6 @@ from typing import List, Optional
 
 from beanie import BackLink, Document, Indexed, Link, PydanticObjectId
 from pydantic import EmailStr, Field
-from pymongo import TEXT, IndexModel
 
 
 class User(Document):
@@ -14,6 +13,7 @@ class User(Document):
     email_verified_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     image: Optional[str] = None
     accounts: BackLink[List[Account]] = Field(original_field="user_id")
+    created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
 
     class Settings:
         name = "users"
@@ -23,7 +23,7 @@ class User(Document):
 class Account(Document):
     user_id: PydanticObjectId
     provider_name: str
-    provider_account_id: str
+    provider_account_id: Indexed(str)
     refresh_token: Optional[str] = None
     access_token: Optional[str] = None
     access_token_expires: Optional[datetime] = None
@@ -39,11 +39,6 @@ class Account(Document):
 
     class Settings:
         name = "accounts"
-        indexes = [
-            IndexModel(
-                [("provider_id", TEXT), ("provider_account_id", TEXT)], unique=True
-            )
-        ]
         use_state_management = True
 
 

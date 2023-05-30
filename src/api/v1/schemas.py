@@ -3,14 +3,42 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field
+import humps
+from bson import ObjectId
+from pydantic import BaseModel, EmailStr, Field, validator
+
+from src.utils.pydantic_utils import AllOptional
 
 
-class UserSchema(BaseModel):
+class UserInputSchema(BaseModel):
     name: str = None
     email: EmailStr
-    email_verified_at: datetime | None = Field(alias="emailVerified")
+    email_verified_at: datetime | None
     image: str = None
+
+    class Config:
+        alias_generator = humps.camelize
+
+
+class UserUpdateSchema(UserInputSchema, metaclass=AllOptional):
+    pass
+
+
+class UserOutputSchema(BaseModel):
+    id: str
+    name: str | None
+    email: EmailStr
+    email_verified: datetime | None
+    image: str = None
+    created_at: datetime | None
+
+    class Config:
+        alias_generator = humps.camelize
+        orm_mode = True
+
+    @validator("id", pre=True)
+    def convert_object_id(cls, value: ObjectId) -> str:
+        return str(value)
 
 
 class AccountScheme(BaseModel):

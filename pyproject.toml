@@ -21,6 +21,7 @@ starlette-context = "^0.3.6"
 pyjwt = { version = "^2.7.0", extras = ["crypto"]}
 structlog = "^23.1.0"
 colorama = "^0.4.6"
+pyhumps = "^3.8.0"
 
 
 [tool.poetry.group.dev.dependencies]

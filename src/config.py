@@ -1,5 +1,5 @@
 import pathlib
-from typing import Final, Literal, Any
+from typing import Any, Final, Literal
 
 from pydantic import BaseSettings, Field, root_validator
 from pydantic.networks import MongoDsn
@@ -23,10 +23,18 @@ class AppConfig(BaseSettings):
     debug: bool = True
     logging_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "DEBUG"
 
+    auth0_domain: str = Field(env="AUTH0_DOMAIN")
+    auth0_audience: str = Field(env="AUTH0_AUDIENCE")
+    auth0_jwt_issuer: str
+
     @root_validator(pre=True)
     def set_version_from_git(cls, values: dict[str, Any]) -> dict[str, Any]:
         if "version" not in values:
             values["version"] = git.get_revision_hash()
+
+        auth0_domain = values["auth0_domain"]
+        values["auth0_jwt_issuer"] = f"https://{auth0_domain}/"
+
         return values
 
     class Config:
