@@ -73,10 +73,9 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=["http://localhost:8080"],
         allow_methods=["*"],
-        allow_headers=["X-Requested-ID", "X-Correlation-ID"],
-        expose_headers=["X-Request-ID", "X-Correlation-ID"],
+        allow_headers=["*"],
         allow_credentials=True,
     )
     app.include_router(create_root_router())
