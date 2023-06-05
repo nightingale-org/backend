@@ -1,21 +1,24 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional
 
 from beanie import BackLink, Document, Indexed, Link, PydanticObjectId
-from pydantic import EmailStr, Field
+from pydantic import Field
 
+from src.db.models.relationship import Relationship
 from src.utils.pydantic_utils import Username
 
 
 class User(Document):
-    username: Optional[Indexed(Username, unique=True)] = None
-    email: Optional[Indexed(EmailStr, unique=True)] = None
-    email_verified_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
-    image: Optional[str] = None
-    accounts: BackLink[List[Account]] = Field(original_field="user_id")
-    created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    username: Indexed(Username, unique=True) | None = None
+    image: str | None = None
+    about_me: str | None = None
+    email: str
+    email_verified_at: datetime | None = Field(alias="emailVerified")
+    created_at: datetime | None = Field(default_factory=datetime.utcnow)
+
+    relationships: list[Link[Relationship]] = Field(default_factory=list)
+    accounts: list[BackLink[Account]] = Field(original_field="user_id")
 
     class Settings:
         name = "users"
@@ -25,23 +28,10 @@ class User(Document):
 class Account(Document):
     user_id: PydanticObjectId
     provider_name: str
-    provider_account_id: Indexed(str)
-    refresh_token: Optional[str] = None
-    access_token: Optional[str] = None
-    access_token_expires: Optional[datetime] = None
-    created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
-    # TODO update on update
-    updated_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
-    expires_at: Optional[int] = None
-    token_type: Optional[str] = None
-    scope: Optional[str] = None
-    id_token: Optional[str] = None
-    session_state: Optional[str] = None
+    provider_account_id: str
+    created_at: datetime | None = Field(default_factory=datetime.utcnow)
     user: Link[User]
 
     class Settings:
         name = "accounts"
         use_state_management = True
-
-
-User.update_forward_refs()

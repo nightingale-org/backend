@@ -1,11 +1,11 @@
+from __future__ import annotations
+
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response
-from pydantic import EmailStr, parse_obj_as
 from starlette.status import HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
 
-from src.api.auth_dependency import protected_route
-from src.api.v1.schemas import (
+from src.schemas.user import (
     AccountScheme,
     ExistsResponseSchema,
     UserInputSchema,
@@ -13,10 +13,15 @@ from src.api.v1.schemas import (
     UserUpdateSchema,
 )
 from src.services.user_service import UserService
+from src.utils.auth import (
+    UserCredentials,
+    get_current_user_credentials,
+    validate_jwt_token,
+)
 from src.utils.stub import DependencyStub
 
 router = APIRouter(
-    prefix="/users", tags=["users"], dependencies=[Depends(protected_route)]
+    prefix="/users", tags=["users"], dependencies=[Depends(validate_jwt_token)]
 )
 
 
@@ -33,16 +38,6 @@ async def create_user(
 ) -> UserOutputSchema:
     user = await user_service.create_user(**user.dict())
     return UserOutputSchema.from_orm(user)
-
-
-@router.get("/connections/{email}/")
-async def get_users_to_chat_with(
-    email: EmailStr,
-    user_service: Annotated[UserService, Depends(DependencyStub("user_service"))],
-) -> list[UserOutputSchema]:
-    return parse_obj_as(
-        list[UserOutputSchema], await user_service.get_users_to_chat_with(email)
-    )
 
 
 @router.get("/availability/{username}/", response_model=ExistsResponseSchema)
@@ -76,7 +71,7 @@ async def update_user(
     description="Get user",
     response_description="User retrieved",
 )
-async def get_user_by_account(
+async def get_user_by_filters(
     user_service: Annotated[UserService, Depends(DependencyStub("user_service"))],
     user_id: str | None = None,
     email: str | None = None,
@@ -91,6 +86,16 @@ async def get_user_by_account(
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="User not found")
 
     return UserOutputSchema.from_orm(user)
+
+
+@router.get("/me/", status_code=200, summary="Get current user")
+async def get_current_user(
+    user_credentials: Annotated[UserCredentials, Depends(get_current_user_credentials)],
+    user_service: Annotated[UserService, Depends(DependencyStub("user_service"))],
+) -> UserOutputSchema:
+    return UserOutputSchema.from_orm(
+        await user_service.get_user_by_email(user_credentials.email)
+    )
 
 
 @router.delete(

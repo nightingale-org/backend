@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import functools
 from contextlib import asynccontextmanager
 from typing import Annotated
@@ -19,6 +21,7 @@ from starlette_context.middleware import RawContextMiddleware
 from src.api.v1 import create_root_router
 from src.config import app_config
 from src.db.models import gather_documents
+from src.services.relationship_service import RelationshipService
 from src.services.user_service import UserService
 from src.utils.logs import configure_logging
 from src.utils.stub import DependencyStub
@@ -40,11 +43,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 @asynccontextmanager
-async def lifespan(application: FastAPI, mongodb_client: AsyncIOMotorClient):  # noqa
-    configure_logging()
+async def lifespan(application: FastAPI, mongodb_client: AsyncIOMotorClient):
     await init_beanie(
         database=getattr(mongodb_client, app_config.database_name),
-        document_models=gather_documents(),  # type: ignore[arg-type]
+        document_models=gather_documents(),
     )
     yield
 
@@ -82,7 +84,8 @@ def create_app() -> FastAPI:
 
     app.exception_handler(RequestValidationError)(validation_exception_handler)
     app.dependency_overrides = {
-        DependencyStub("user_service"): lambda: UserService(),
+        DependencyStub("user_service"): lambda: UserService(mongodb_client),
+        DependencyStub("contact_service"): lambda: RelationshipService(mongodb_client),
     }
 
     return app

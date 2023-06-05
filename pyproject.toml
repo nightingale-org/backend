@@ -1,20 +1,20 @@
 [tool.poetry]
 name = "nightingale-backend"
-version = "0.1.0"
+version = "0.0.0.post7.dev0+eaeb93c"
 description = ""
 authors = ["GLEF1X <glebgar567@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = "^0.95.1"
-uvicorn = "^0.22.0"
+fastapi = "^0.96.0"
+uvicorn = { version = "^0.22.0", extras = ["standard"] }
 python-dateutil = "^2.8.2"
 python-dotenv = "^1.0.0"
 httpx = "^0.24.0"
 itsdangerous = "^2.1.2"
 fasteners = "^0.18"
-orjson = "^3.8.11"
+orjson = "^3.9.0"
 email-validator = "^2.0.0.post2"
 beanie = "^1.19.0"
 starlette-context = "^0.3.6"
@@ -30,6 +30,7 @@ ruff = "^0.0.265"
 isort = "^5.12.0"
 pytest = "^7.3.1"
 pytest-anyio = "^0.0.0"
+motor-stubs = "^1.7.1"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -38,22 +39,35 @@ testpaths = [
 ]
 
 [tool.ruff]
-select = [
-    "E", # pycodestyle errors
-    "W", # pycodestyle warnings
-    "F", # pyflakes
-    # "I",  # isort
-    "C", # flake8-comprehensions
-    "B", # flake8-bugbear
+fix = true
+unfixable = [
+    "ERA", # do not autoremove commented out code
 ]
-ignore = [
-    "E501", # line too long, handled by black
-    "B008", # do not perform function calls in argument defaults
-    "C901", # too complex
+target-version = "py310"
+line-length = 100
+extend-select = [
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "ERA", # flake8-eradicate/eradicate
+    "I",   # isort
+    "N",   # pep8-naming
+    "PIE", # flake8-pie
+    "PGH", # pygrep
+    "RUF", # ruff checks
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+    "TID", # flake8-tidy-imports
+    "UP",  # pyupgrade
 ]
 
+[tool.ruff.flake8-tidy-imports]
+ban-relative-imports = "all"
+
 [tool.ruff.isort]
-known-third-party = ["fastapi", "pydantic", "starlette"]
+force-single-line = true
+lines-between-types = 1
+lines-after-imports = 2
+required-imports = ["from __future__ import annotations"]
 
 [tool.mypy]
 plugins = "pydantic.mypy"
@@ -89,6 +103,11 @@ module = [
 ignore_missing_imports = true
 disallow_untyped_defs = true
 
+[tool.poetry-dynamic-versioning]
+enable = true
+vcs = "git"
+style = "pep440"
+
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
+build-backend = "poetry_dynamic_versioning.backend"

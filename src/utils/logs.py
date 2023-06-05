@@ -1,17 +1,14 @@
+from __future__ import annotations
+
 import logging
 import logging.config
-import sys
-from typing import Any, Dict, MutableMapping, Tuple
+from collections.abc import MutableMapping
+from typing import Any, TypeAlias
 
 import structlog
 import uvicorn
 
 from src.config import app_config
-
-if sys.version_info >= (3, 10):
-    from typing import TypeAlias
-else:
-    from typing_extensions import TypeAlias
 
 EventDict: TypeAlias = MutableMapping[str, Any]
 
@@ -23,7 +20,7 @@ def remove_color_message(_, __, event_dict: EventDict) -> EventDict:
     return event_dict
 
 
-_SHARED_PROCESSORS: Tuple[structlog.typing.Processor, ...] = (
+_SHARED_PROCESSORS: tuple[structlog.typing.Processor, ...] = (
     structlog.contextvars.merge_contextvars,
     structlog.stdlib.add_log_level,
     # Add extra attributes of LogRecord objects to the event dictionary
@@ -35,7 +32,7 @@ _SHARED_PROCESSORS: Tuple[structlog.typing.Processor, ...] = (
     remove_color_message,
 )
 
-LOGGING_CONFIG: Dict[str, Any] = {
+LOGGING_CONFIG: dict[str, Any] = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {

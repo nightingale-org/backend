@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import re
-from typing import Any, Dict, Optional, Type, TypeVar
+from typing import Any, Optional, TypeVar
 
 import pydantic
 from beanie import Document
@@ -11,8 +13,8 @@ USERNAME_REGEXP = re.compile(r"^[a-z0-9_]+$", re.IGNORECASE)
 
 
 def map_raw_data_to_pydantic_fields(
-    data: Dict[str, _T], document_type: Type[Document]
-) -> Dict[ModelField, _T]:
+    data: dict[str, _T], document_type: type[Document]
+) -> dict[ModelField, _T]:
     pydantic_field_to_value_mapping = {}
     for key in data:
         if key not in document_type.__fields__:
@@ -42,7 +44,7 @@ class Username(str):
         yield cls.validate
 
     @classmethod
-    def __modify_schema__(cls, field_schema: Dict[str, Any]) -> None:
+    def __modify_schema__(cls, field_schema: dict[str, Any]) -> None:
         field_schema.update(
             pattern="^[A-Z]{1,2}[0-9][A-Z0-9]? ?[0-9][A-Z]{2}$",
             examples=["gleb32222", "GLEF1X"],
@@ -50,7 +52,7 @@ class Username(str):
         )
 
     @classmethod
-    def validate(cls, v: str) -> "Username":
+    def validate(cls, v: str) -> Username:
         if not isinstance(v, str):
             raise TypeError("string required")
 

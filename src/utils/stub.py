@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import weakref
 from typing import Any, NoReturn
 
@@ -10,7 +12,7 @@ class DependencyStubMeta(type):
     __slots__ = ()
     _instances = weakref.WeakValueDictionary()
 
-    def __call__(cls, key: str) -> "DependencyStub":
+    def __call__(cls, key: str) -> DependencyStub:
         if key not in cls._instances:
             instance = super().__call__(key)
             cls._instances[key] = instance

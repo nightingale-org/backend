@@ -1,27 +1,25 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 
 import humps
 from bson import ObjectId
 from pydantic import BaseModel, EmailStr, Field, validator
-
-from src.utils.pydantic_utils import AllOptional
 
 
 class UserInputSchema(BaseModel):
     username: str | None
     email: EmailStr
     email_verified_at: datetime | None
-    image: str = None
+    image: str | None = None
 
     class Config:
         alias_generator = humps.camelize
 
 
-class UserUpdateSchema(UserInputSchema, metaclass=AllOptional):
-    pass
+class UserUpdateSchema(BaseModel):
+    username: str | None
+    image: str | None
 
 
 class ExistsResponseSchema(BaseModel):
@@ -49,14 +47,14 @@ class AccountScheme(BaseModel):
     user_id: str = Field(alias="userId")
     provider_name: str = Field(alias="type")
     provider_account_id: str = Field(alias="providerAccountId")
-    refresh_token: Optional[str] = None
-    access_token: Optional[str] = None
-    access_token_expires: Optional[datetime] = None
-    created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    refresh_token: str | None = None
+    access_token: str | None = None
+    access_token_expires: datetime | None = None
+    created_at: datetime | None = Field(default_factory=datetime.utcnow)
     # TODO update on update
-    updated_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
-    expires_at: Optional[int] = None
-    token_type: Optional[str] = None
-    scope: Optional[str] = None
-    id_token: Optional[str] = None
-    session_state: Optional[str] = None
+    updated_at: datetime | None = Field(default_factory=datetime.utcnow)
+    expires_at: int | None = None
+    token_type: str | None = None
+    scope: str | None = None
+    id_token: str | None = None
+    session_state: str | None = None

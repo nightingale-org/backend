@@ -1,21 +1,18 @@
-# All database models must be imported here to be able to
-# initialize them on startup.
-import sys
-from typing import Sequence, Type, TypeVar
+from __future__ import annotations
 
 from beanie import Document
 
-from .user import Account, User  # noqa: F401
+from src.db.models.conversation import Conversation, Message
+from src.db.models.relationship import Relationship
+from src.db.models.user import Account, User
 
-DocType = TypeVar("DocType", bound=Document)
+
+def gather_documents() -> list[type[Document]]:
+    Relationship.update_forward_refs(User=User)
+    Conversation.update_forward_refs(User=User)
+    Message.update_forward_refs(User=User)
+
+    return [Account, Relationship, User, Conversation, Message]
 
 
-def gather_documents() -> Sequence[Type[DocType]]:
-    """Returns a list of all MongoDB document models defined in `models` module."""
-    from inspect import getmembers, isclass
-
-    return [
-        doc
-        for _, doc in getmembers(sys.modules[__name__], isclass)
-        if issubclass(doc, Document) and doc.__name__ != "Document"
-    ]
+__all__ = ["User", "Relationship", "Account", "gather_documents"]
