@@ -60,6 +60,9 @@ extend-select = [
     "UP",  # pyupgrade
 ]
 
+[tool.ruff.pep8-naming]
+classmethod-decorators = ['pydantic.validator', 'pydantic.root_validator', 'pydantic.validate_arguments']
+
 [tool.ruff.flake8-tidy-imports]
 ban-relative-imports = "all"
 
