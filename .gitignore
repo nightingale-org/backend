@@ -28,3 +28,6 @@ src/.env.prod
 # vim temporary files
 *~
 .*.sw?
+
+
+playground.py
