@@ -1,26 +1,31 @@
 from __future__ import annotations
 
 import functools
+
 from contextlib import asynccontextmanager
 from typing import Annotated
 
 import uvicorn
+
 from beanie import init_beanie
-from fastapi import FastAPI, Header
+from fastapi import FastAPI
+from fastapi import Header
+from fastapi import Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import ORJSONResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 from starlette.middleware.cors import CORSMiddleware
-from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_400_BAD_REQUEST
-from starlette_context import plugins, request_cycle_context
+from starlette_context import plugins
+from starlette_context import request_cycle_context
 from starlette_context.middleware import RawContextMiddleware
 
 from src.api.v1 import create_root_router
 from src.config import app_config
 from src.db.models import gather_documents
+from src.exceptions import BusinessLogicException
 from src.services.relationship_service import RelationshipService
 from src.services.user_service import UserService
 from src.utils.logs import configure_logging
@@ -28,7 +33,8 @@ from src.utils.stub import DependencyStub
 
 
 async def provide_additional_headers_to_openapi(
-    x_request_id: Annotated[str, Header()], x_correlation_id: Annotated[str, Header()]
+    x_request_id: Annotated[str, Header(...)],
+    x_correlation_id: Annotated[str, Header(...)],
 ):
     data = {"x_request_id": x_request_id, "x_correlation_id": x_correlation_id}
     with request_cycle_context(data):
@@ -39,6 +45,15 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     return JSONResponse(
         status_code=HTTP_400_BAD_REQUEST,
         content=jsonable_encoder({"detail": exc.errors(), "body": exc.body}),
+    )
+
+
+async def transform_business_logic_exception_handler(
+    request: Request, exc: BusinessLogicException
+):
+    return JSONResponse(
+        status_code=HTTP_400_BAD_REQUEST,
+        content=jsonable_encoder({"detail": exc.message}),
     )
 
 
@@ -82,7 +97,10 @@ def create_app() -> FastAPI:
     )
     app.include_router(create_root_router())
 
-    app.exception_handler(RequestValidationError)(validation_exception_handler)
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(
+        BusinessLogicException, transform_business_logic_exception_handler
+    )
     app.dependency_overrides = {
         DependencyStub("user_service"): lambda: UserService(mongodb_client),
         DependencyStub("contact_service"): lambda: RelationshipService(mongodb_client),
