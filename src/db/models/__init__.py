@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from beanie import Document
 
-from src.db.models.conversation import Conversation, Message
+from src.db.models.conversation import Conversation
+from src.db.models.conversation import Message
 from src.db.models.relationship import Relationship
-from src.db.models.user import Account, User
+from src.db.models.user import Account
+from src.db.models.user import User
 
 
 def gather_documents() -> list[type[Document]]:
@@ -15,4 +17,11 @@ def gather_documents() -> list[type[Document]]:
     return [Account, Relationship, User, Conversation, Message]
 
 
-__all__ = ["User", "Relationship", "Account", "gather_documents"]
+__all__ = [
+    "User",
+    "Relationship",
+    "Account",
+    "Conversation",
+    "Message",
+    "gather_documents",
+]

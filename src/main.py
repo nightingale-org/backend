@@ -26,6 +26,7 @@ from src.api.v1 import create_root_router
 from src.config import app_config
 from src.db.models import gather_documents
 from src.exceptions import BusinessLogicException
+from src.services.conversation_service import ConversationService
 from src.services.relationship_service import RelationshipService
 from src.services.user_service import UserService
 from src.utils.logs import configure_logging
@@ -104,6 +105,9 @@ def create_app() -> FastAPI:
     app.dependency_overrides = {
         DependencyStub("user_service"): lambda: UserService(mongodb_client),
         DependencyStub("contact_service"): lambda: RelationshipService(mongodb_client),
+        DependencyStub("conversation_service"): lambda: ConversationService(
+            mongodb_client
+        ),
     }
 
     return app

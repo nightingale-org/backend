@@ -3,8 +3,11 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
-from beanie import BackLink, Document, Link
-from pydantic import Field
+from beanie import Document
+from beanie import PydanticObjectId
+from pymongo import TEXT
+from pymongo import IndexModel
+
 
 if TYPE_CHECKING:
     from src.db.models import User
@@ -18,11 +21,13 @@ class RelationshipType(IntEnum):
 
 
 class Relationship(Document):
-    with_user: Link[User]
+    partner: User
     type: RelationshipType
-
-    initiator: BackLink[User] = Field(original_field="relationships")
+    initiator_id: PydanticObjectId
 
     class Settings:
-        indexes = ["type", "with_user.id"]
+        indexes = [
+            "type",
+            IndexModel([("partner._id", TEXT), ("initiator_id", TEXT)], unique=True),
+        ]
         name = "relationships"

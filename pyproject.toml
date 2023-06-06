@@ -32,6 +32,8 @@ isort = "^5.12.0"
 pytest = "^7.3.1"
 pytest-anyio = "^0.0.0"
 motor-stubs = "^1.7.1"
+faker = "^18.10.1"
+pytest-pretty = "^1.2.0"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -44,7 +46,7 @@ fix = true
 unfixable = [
     "ERA", # do not autoremove commented out code
 ]
-target-version = "py310"
+target-version = "py311"
 line-length = 100
 extend-select = [
     "B",   # flake8-bugbear
@@ -59,6 +61,13 @@ extend-select = [
     "TCH", # flake8-type-checking
     "TID", # flake8-tidy-imports
     "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+    "TCH002", # Move third-party import {} into a type-checking block
+    "TCH001" # Move application import {} into a type-checking block
 ]
 
 [tool.ruff.pep8-naming]

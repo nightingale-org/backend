@@ -2,24 +2,25 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
-from pydantic import PositiveInt, parse_obj_as
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import Query
+from pydantic import PositiveInt
+from pydantic import parse_obj_as
 from starlette.responses import Response
-from starlette.status import HTTP_200_OK, HTTP_201_CREATED
+from starlette.status import HTTP_200_OK
+from starlette.status import HTTP_201_CREATED
 
 from src.db.models.relationship import RelationshipType
-from src.schemas.relationship import (
-    BlockUserSchema,
-    CreateRelationshipInputSchema,
-    RelationshipSchema,
-)
+from src.schemas.relationship import BlockUserSchema
+from src.schemas.relationship import CreateRelationshipInputSchema
+from src.schemas.relationship import RelationshipSchema
 from src.services.relationship_service import RelationshipService
-from src.utils.auth import (
-    UserCredentials,
-    get_current_user_credentials,
-    validate_jwt_token,
-)
+from src.utils.auth import UserCredentials
+from src.utils.auth import get_current_user_credentials
+from src.utils.auth import validate_jwt_token
 from src.utils.stub import DependencyStub
+
 
 router = APIRouter(
     prefix="/contacts", tags=["contacts"], dependencies=[Depends(validate_jwt_token)]
@@ -55,7 +56,7 @@ async def add_relationship(
     ],
     user_credentials: Annotated[UserCredentials, Depends(get_current_user_credentials)],
 ):
-    await relationship_service.add_relationship(
+    await relationship_service.establish_relationship(
         username=relationship_payload.username, initiator_email=user_credentials.email
     )
 

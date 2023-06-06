@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from beanie import BackLink, Document, Indexed, Link, PydanticObjectId
+from beanie import Document
+from beanie import Indexed
+from beanie import Link
+from beanie import PydanticObjectId
 from pydantic import Field
 
-from src.db.models.relationship import Relationship
 from src.utils.pydantic_utils import Username
 
 
@@ -16,9 +18,6 @@ class User(Document):
     email: str
     email_verified_at: datetime | None = Field(alias="emailVerified")
     created_at: datetime | None = Field(default_factory=datetime.utcnow)
-
-    relationships: list[Link[Relationship]] = Field(default_factory=list)
-    accounts: list[BackLink[Account]] = Field(original_field="user_id")
 
     class Settings:
         name = "users"
