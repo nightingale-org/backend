@@ -39,7 +39,7 @@ class ConversationService(BaseService):
         conversation = Conversation(
             name=name, is_group=is_group, members=members, user_limit=user_limit
         )
-        await conversation.save(session=self._current_session)
+        await conversation.create(session=self._current_session)
         return conversation
 
     async def get_conversation(

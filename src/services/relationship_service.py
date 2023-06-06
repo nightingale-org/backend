@@ -54,7 +54,7 @@ class RelationshipService(BaseService):
 
         await Relationship(
             initiator_id=initiator.id, partner=relationship_partner
-        ).save(session=self._current_session)
+        ).create(session=self._current_session)
 
     async def block_user(self, *, initiator_user_id: str, partner_user_id: str) -> None:
         await Relationship.find_one(
