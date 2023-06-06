@@ -3,7 +3,7 @@ from __future__ import annotations
 from beanie import PydanticObjectId
 
 from src.db.models import Conversation
-from src.db.models import User
+from src.schemas.conversations import CreateConversationSchema
 from src.services.base_service import BaseService
 
 
@@ -30,14 +30,13 @@ class ConversationService(BaseService):
         ).to_list(limit)
 
     async def create_conversation(
-        self,
-        is_group: bool,
-        members: list[User],
-        name: str | None = None,
-        user_limit: int | None = None,
+        self, create_input: CreateConversationSchema
     ) -> Conversation:
         conversation = Conversation(
-            name=name, is_group=is_group, members=members, user_limit=user_limit
+            name=create_input.name,
+            is_group=create_input.is_group,
+            members=create_input.members,
+            user_limit=create_input.user_limit,
         )
         await conversation.create(session=self._current_session)
         return conversation
