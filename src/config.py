@@ -1,12 +1,22 @@
 from __future__ import annotations
 
 import pathlib
-from typing import Any, Final, Literal
 
-from pydantic import BaseSettings, Field, root_validator
-from pydantic.networks import MongoDsn
+from typing import TYPE_CHECKING
+from typing import Any
+from typing import Final
+from typing import Literal
+
+from pydantic import BaseSettings
+from pydantic import Field
+from pydantic import root_validator
+
+
+if TYPE_CHECKING:
+    from pydantic.networks import MongoDsn
 
 from src.utils import git
+
 
 ENV_EXAMPLE_FILE_PATH = pathlib.Path(__file__).parent / ".env.example"
 ENV_PROD_FILE_PATH = pathlib.Path(__file__).parent / ".env.prod"
@@ -28,6 +38,8 @@ class AppConfig(BaseSettings):
     auth0_domain: str = Field(env="AUTH0_DOMAIN")
     auth0_audience: str = Field(env="AUTH0_AUDIENCE")
     auth0_jwt_issuer: str
+
+    test_db_name: str = "test_database"
 
     @root_validator(pre=True)
     def set_version_from_git(cls, values: dict[str, Any]) -> dict[str, Any]:
