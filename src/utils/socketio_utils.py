@@ -23,7 +23,7 @@ P = ParamSpec("P")
 CallableT = TypeVar("CallableT", bound=Callable[..., Any])
 
 
-class IdempotentAsyncClient(AsyncClient):
+class IdempotentSocketIOAsyncClient(AsyncClient):
     async def connect(self, *args: Any, **kwargs: Any) -> None:
         if not self.connected:
             await super().connect(*args, **kwargs)
