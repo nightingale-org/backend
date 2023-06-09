@@ -2,27 +2,25 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Response
-from starlette.status import HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import Response
+from starlette.status import HTTP_204_NO_CONTENT
+from starlette.status import HTTP_404_NOT_FOUND
 
-from src.schemas.user import (
-    AccountScheme,
-    ExistsResponseSchema,
-    UserInputSchema,
-    UserOutputSchema,
-    UserUpdateSchema,
-)
+from src.schemas.user import AccountScheme
+from src.schemas.user import ExistsResponseSchema
+from src.schemas.user import UserInputSchema
+from src.schemas.user import UserOutputSchema
+from src.schemas.user import UserUpdateSchema
 from src.services.user_service import UserService
-from src.utils.auth import (
-    UserCredentials,
-    get_current_user_credentials,
-    validate_jwt_token,
-)
+from src.utils.auth import UserCredentials
+from src.utils.auth import get_current_user_credentials
 from src.utils.stub import DependencyStub
 
-router = APIRouter(
-    prefix="/users", tags=["users"], dependencies=[Depends(validate_jwt_token)]
-)
+
+router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.post(

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-import abc
 from contextlib import asynccontextmanager
 from typing import AsyncContextManager
 
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorClientSession
+from motor.motor_asyncio import AsyncIOMotorClient
+from motor.motor_asyncio import AsyncIOMotorClientSession
 
 
-class BaseService(abc.ABC):
+class BaseService:
     def __init__(self, db_client: AsyncIOMotorClient):
         self.__db_client = db_client
         self._current_session: AsyncIOMotorClientSession | None = None

@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import logging
 import logging.config
+
 from collections.abc import MutableMapping
-from typing import Any, TypeAlias
+from typing import Any
+from typing import TypeAlias
 
 import structlog
 import uvicorn
 
 from src.config import app_config
+
 
 EventDict: TypeAlias = MutableMapping[str, Any]
 

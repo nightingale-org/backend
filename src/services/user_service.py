@@ -8,7 +8,7 @@ from bson import ObjectId
 
 from src.db.models import Account
 from src.db.models import User
-from src.exceptions import BusinessLogicException
+from src.exceptions import BusinessLogicError
 from src.services.base_service import BaseService
 from src.utils.pydantic_utils import map_raw_data_to_pydantic_fields
 
@@ -76,7 +76,7 @@ class UserService(BaseService):
     async def link_account(self, user_id: str, account: AccountScheme):
         user = await User.get(user_id, fetch_links=False, session=self._current_session)
         if not user:
-            raise BusinessLogicException("User not found")
+            raise BusinessLogicError("User not found")
 
         await Account(**account.dict(), user=user).create()
 

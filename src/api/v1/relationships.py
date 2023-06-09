@@ -39,7 +39,7 @@ async def get_relationships(
     limit: PositiveInt = 20,
 ) -> list[RelationshipSchema]:
     # TODO: replace parse_obj_as with ContactSchema.construct with list comprehension
-    # to optimize performance since we don't need to revalidate the data from odm.
+    #     to optimize performance since we don't need to revalidate the data from odm.
     return parse_obj_as(
         list[RelationshipSchema],
         await relationship_service.get_relationships(

@@ -5,12 +5,14 @@ from typing import Annotated
 from beanie import PydanticObjectId
 from fastapi import APIRouter
 from fastapi import Depends
+from socketio.asyncio_client import AsyncClient
 
 from src.schemas.conversations import CreateConversationSchema
 from src.services.conversation_service import ConversationService
 from src.utils.auth import UserCredentials
 from src.utils.auth import get_current_user_credentials
 from src.utils.auth import validate_jwt_token
+from src.utils.socketio_utils import emit_on_connect
 from src.utils.stub import DependencyStub
 
 
@@ -37,8 +39,13 @@ async def create_conversation(
     conversation_service: Annotated[
         ConversationService, Depends(DependencyStub("conversation_service"))
     ],
+    socketio_client: Annotated[AsyncClient, Depends(DependencyStub("socketio_client"))],
 ):
-    return await conversation_service.create_conversation(conversation_input)
+    conversation = await conversation_service.create_conversation(conversation_input)
+    await emit_on_connect(
+        socketio_client, "conversations:new", conversation.json(by_alias=True)
+    )
+    return conversation
 
 
 @router.get("/{conversation_id}")

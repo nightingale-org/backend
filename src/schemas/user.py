@@ -3,8 +3,12 @@ from __future__ import annotations
 from datetime import datetime
 
 import humps
+
 from bson import ObjectId
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel
+from pydantic import EmailStr
+from pydantic import Field
+from pydantic import validator
 
 
 class UserInputSchema(BaseModel):

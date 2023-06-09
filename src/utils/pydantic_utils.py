@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Optional, TypeVar
+
+from typing import Any
+from typing import Optional
+from typing import TypeVar
 
 import pydantic
+
 from beanie import Document
 from pydantic.fields import ModelField
+
 
 _T = TypeVar("_T", bound=Any)
 

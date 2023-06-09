@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+from beanie import PydanticObjectId
 from pydantic import BaseModel
-
-from src.db.models import User
+from pydantic import conlist
 
 
 class CreateConversationSchema(BaseModel):
     is_group: bool
-    members: list[User]
+    members: conlist(PydanticObjectId, min_items=2)
     name: str | None = None
     user_limit: int | None = None

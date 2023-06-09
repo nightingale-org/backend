@@ -1,10 +1,20 @@
 from __future__ import annotations
 
 import weakref
-from typing import Any, NoReturn
+
+from typing import Any
+from typing import NoReturn
 
 
-class DependencyUnresolvedException(Exception):
+class SingletonDependency:
+    def __init__(self, dependency: Any):
+        self._dependency = dependency
+
+    def __call__(self):
+        return self._dependency
+
+
+class DependencyUnresolvedError(Exception):
     pass
 
 
@@ -43,7 +53,7 @@ class DependencyStub(metaclass=DependencyStubMeta):
         return self.key == other.key
 
     def __call__(self) -> NoReturn:
-        raise DependencyUnresolvedException(
+        raise DependencyUnresolvedError(
             "DependencyStub should not be called. "
             f"You might haven't provided an actual value for dependency with a key={self.key}"
             f" to `FastAPI.dependency_overrides`. ",

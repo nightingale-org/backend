@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import pathlib
 
-from typing import TYPE_CHECKING
 from typing import Any
 from typing import Final
 from typing import Literal
@@ -10,10 +9,8 @@ from typing import Literal
 from pydantic import BaseSettings
 from pydantic import Field
 from pydantic import root_validator
-
-
-if TYPE_CHECKING:
-    from pydantic.networks import MongoDsn
+from pydantic.networks import MongoDsn
+from pydantic.networks import RedisDsn
 
 from src.utils import git
 
@@ -27,6 +24,8 @@ TOKEN_STATE_KEY: Final[str] = "user"
 class AppConfig(BaseSettings):
     db_url: MongoDsn = Field(env="DATABASE_URL")
     database_name: str = Field(env="DATABASE_NAME")
+
+    redis_dsn: RedisDsn = Field(env="REDIS_DSN")
 
     openapi_title: str
     openapi_description: str

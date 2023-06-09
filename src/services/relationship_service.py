@@ -6,7 +6,7 @@ from beanie.odm.operators.update.general import Set
 from src.db.models import User
 from src.db.models.relationship import Relationship
 from src.db.models.relationship import RelationshipType
-from src.exceptions import BusinessLogicException
+from src.exceptions import BusinessLogicError
 from src.services.base_service import BaseService
 
 
@@ -42,7 +42,7 @@ class RelationshipService(BaseService):
             User.username == username, session=self._current_session
         )
         if not relationship_partner:
-            raise BusinessLogicException(
+            raise BusinessLogicError(
                 f"Could not locate a user by the username {username}."
             )
 
@@ -50,7 +50,7 @@ class RelationshipService(BaseService):
             User.email == initiator_email, session=self._current_session
         )
         if initiator.id == relationship_partner.id:
-            raise BusinessLogicException("You can't add yourself to relationships")
+            raise BusinessLogicError("You can't add yourself to relationships")
 
         await Relationship(
             initiator_id=initiator.id, partner=relationship_partner
