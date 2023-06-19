@@ -26,6 +26,10 @@ class UserUpdateSchema(BaseModel):
     image: str | None
 
 
+class CheckUsernameAvailabilitySchema(BaseModel):
+    username: str
+
+
 class ExistsResponseSchema(BaseModel):
     exists: bool
 

@@ -23,7 +23,9 @@ from src.utils.stub import DependencyStub
 
 
 router = APIRouter(
-    prefix="/contacts", tags=["contacts"], dependencies=[Depends(validate_jwt_token)]
+    prefix="/relationships",
+    tags=["relationships"],
+    dependencies=[Depends(validate_jwt_token)],
 )
 
 
@@ -63,7 +65,7 @@ async def add_relationship(
     return Response(status_code=HTTP_201_CREATED)
 
 
-@router.post("/block/", status_code=HTTP_200_OK)
+@router.post("/block", status_code=HTTP_200_OK)
 async def block_user(
     block_user_payload: BlockUserSchema,
     relationship_service: Annotated[

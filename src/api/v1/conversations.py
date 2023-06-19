@@ -23,7 +23,7 @@ router = APIRouter(
 )
 
 
-@router.get("/")
+@router.get("/", response_model_by_alias=True)
 async def get_conversations(
     conversation_service: Annotated[
         ConversationService, Depends(DependencyStub("conversation_service"))
@@ -33,7 +33,7 @@ async def get_conversations(
     return await conversation_service.get_all_conversations(user_credentials.email)
 
 
-@router.put("/")
+@router.put("/", response_model_by_alias=True)
 async def create_conversation(
     conversation_input: CreateConversationSchema,
     conversation_service: Annotated[
@@ -48,7 +48,7 @@ async def create_conversation(
     return conversation
 
 
-@router.get("/{conversation_id}")
+@router.get("/{conversation_id}", response_model_by_alias=True)
 async def get_conversation_by_id(
     conversation_id: PydanticObjectId,
     conversation_service: Annotated[
