@@ -1,20 +1,20 @@
 [tool.poetry]
 name = "nightingale-backend"
-version = "0.0.0.post7.dev0+eaeb93c"
+version = "0.0.0.post20.dev0+5dcb01d"
 description = ""
 authors = ["GLEF1X <glebgar567@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = "^0.96.0"
+fastapi = "^0.97.0"
 uvicorn = { version = "^0.22.0", extras = ["standard"] }
 python-dateutil = "^2.8.2"
 python-dotenv = "^1.0.0"
 httpx = "^0.24.0"
 itsdangerous = "^2.1.2"
 fasteners = "^0.18"
-orjson = "^3.9.0"
+orjson = "^3.9.1"
 email-validator = "^2.0.0.post2"
 beanie = "^1.19.0"
 starlette-context = "^0.3.6"
@@ -23,7 +23,7 @@ structlog = "^23.1.0"
 colorama = "^0.4.6"
 pyhumps = "^3.8.0"
 aiohttp = "^3.8.4"
-ddtrace = "^1.14.0"
+ddtrace = "^1.15.0"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -120,7 +120,7 @@ ignore_missing_imports = true
 disallow_untyped_defs = true
 
 [tool.poetry-dynamic-versioning]
-enable = true
+enable = false
 vcs = "git"
 style = "pep440"
 
