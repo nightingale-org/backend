@@ -6,6 +6,7 @@ import structlog
 
 from starlette.requests import Request
 from starlette.responses import Response
+from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 from starlette_context import context
 from starlette_context.header_keys import HeaderKeys
 from uvicorn.protocols.utils import get_path_with_query_string
@@ -23,7 +24,7 @@ async def logging_middleware(request: Request, call_next) -> Response:
     start_time = time.perf_counter_ns()
     # If the call_next raises an error, we still want to return our own 500 response,
     # so we can add headers to it (process time, request ID...)
-    response = Response(status_code=500)
+    response = Response(status_code=HTTP_500_INTERNAL_SERVER_ERROR)
     try:
         response = await call_next(request)
     except Exception:
@@ -46,11 +47,9 @@ async def logging_middleware(request: Request, call_next) -> Response:
                 "status_code": status_code,
                 "method": http_method,
                 "version": http_version,
-                "request_id": context[HeaderKeys.request_id],
-                "correlation_id": context[HeaderKeys.correlation_id],
             },
             network={"client": {"ip": client_host, "port": client_port}},
-            duration=process_time,
+            duration_ms=process_time / 10**6,
         )
         response.headers["X-Process-Time"] = str(process_time / 10**9)
         return response  # noqa: B012
