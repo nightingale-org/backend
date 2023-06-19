@@ -31,9 +31,11 @@ class RelationshipService(BaseService):
                             "initiator.email": email,
                         }
                     },
+                    {
+                        "$limit": limit,
+                    },
                 ]
             )
-            .limit(limit)
             .to_list()
         )
 
