@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from contextlib import AbstractAsyncContextManager
 from contextlib import asynccontextmanager
-from typing import AsyncContextManager
 
 from motor.motor_asyncio import AsyncIOMotorClient
 from motor.motor_asyncio import AsyncIOMotorClientSession
@@ -13,7 +13,9 @@ class BaseService:
         self._current_session: AsyncIOMotorClientSession | None = None
 
     @asynccontextmanager
-    async def transaction(self) -> AsyncContextManager[AsyncIOMotorClientSession]:
+    async def transaction(
+        self,
+    ) -> AbstractAsyncContextManager[AsyncIOMotorClientSession]:
         async with await self.__db_client.start_session() as s:
             async with s.start_transaction():
                 self._current_session = s
