@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from typing import Annotated
 from typing import Any
 
@@ -22,6 +24,8 @@ from pydantic import ValidationError
 
 from src.config import app_config
 
+
+logger = logging.getLogger(__name__)
 
 token_auth_scheme = HTTPBearer()
 
@@ -125,7 +129,8 @@ async def validate_jwt_token(
     token = auth_credentials.credentials
     try:
         return await get_token_payload(token)
-    except TokenInvalidError:
+    except TokenInvalidError as e:
+        logger.error("Invalid token: %s", e)
         raise HTTPException(status_code=401, detail="Invalid token") from None
 
 
