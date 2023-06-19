@@ -34,11 +34,9 @@ class UserService(BaseService):
         )
 
     async def does_user_exists(self, username: str) -> bool:
-        return (
-            await User.find(User.username == username, session=self._current_session)
-            .limit(1)
-            .exists()
-        )
+        return await User.find_one(
+            User.username == username, session=self._current_session
+        ).exists()
 
     async def get_user_by_id(self, user_id: str) -> User | None:
         return await User.get(user_id, fetch_links=True, session=self._current_session)
