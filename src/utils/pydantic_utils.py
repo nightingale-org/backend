@@ -3,7 +3,6 @@ from __future__ import annotations
 import re
 
 from typing import Any
-from typing import Optional
 from typing import TypeVar
 
 import pydantic
@@ -38,7 +37,7 @@ class AllOptional(pydantic.main.ModelMetaclass):
             annotations.update(base.__annotations__)
         for field in annotations:
             if not field.startswith("__"):
-                annotations[field] = Optional[annotations[field]]
+                annotations[field] = annotations[field] | None
         namespaces["__annotations__"] = annotations
         return super().__new__(cls, name, bases, namespaces, **kwargs)
 
