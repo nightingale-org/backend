@@ -21,11 +21,6 @@ class UserInputSchema(BaseModel):
         alias_generator = humps.camelize
 
 
-class UserUpdateSchema(BaseModel):
-    username: str | None
-    image: str | None
-
-
 class CheckUsernameAvailabilitySchema(BaseModel):
     username: str
 

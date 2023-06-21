@@ -38,6 +38,11 @@ class AppConfig(BaseSettings):
     auth0_audience: str = Field(env="AUTH0_AUDIENCE")
     auth0_jwt_issuer: str
 
+    s3_bucket_name: str
+    s3_access_key: str
+    s3_secret_key: str
+    s3_region_name: str
+
     test_db_name: str = "test_database"
 
     @root_validator(pre=True)

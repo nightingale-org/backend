@@ -5,6 +5,7 @@ import functools
 from contextlib import asynccontextmanager
 from typing import Annotated
 
+import aioboto3
 import socketio
 import structlog
 import uvicorn
@@ -46,6 +47,11 @@ def create_app() -> FastAPI:
     socketio_client = IdempotentSocketIOAsyncClient(
         logger=app_config.debug, engineio_logger=app_config.debug
     )
+    boto3_session = aioboto3.Session(
+        aws_access_key_id=app_config.s3_access_key,
+        aws_secret_access_key=app_config.s3_secret_key,
+        region_name=app_config.s3_region_name,
+    )
 
     lifespan_fn = functools.partial(lifespan, mongodb_client=mongodb_client)
 
@@ -63,8 +69,33 @@ def create_app() -> FastAPI:
         version=app_config.version,
         lifespan=lifespan_fn,
     )
+    _setup_middlewares(app)
 
     app.mount("/ws", app=socketio_app, name="socketio")
+    app.include_router(create_root_router())
+
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(ValidationError, validation_exception_handler)
+    app.add_exception_handler(
+        BusinessLogicError, transform_business_logic_exception_handler
+    )
+
+    app.dependency_overrides = {
+        DependencyStub("user_service"): lambda: UserService(
+            mongodb_client, boto3_session
+        ),
+        DependencyStub("contact_service"): lambda: RelationshipService(mongodb_client),
+        DependencyStub("conversation_service"): lambda: ConversationService(
+            mongodb_client
+        ),
+        DependencyStub("socketio_client"): SingletonDependency(socketio_client),
+        DependencyStub("boto3_session"): SingletonDependency(boto3_session),
+    }
+
+    return app
+
+
+def _setup_middlewares(app: FastAPI) -> None:
     app.middleware("http")(logging_middleware)
 
     # This middleware must be placed after the logging, to populate the context with the request ID
@@ -103,24 +134,6 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
         allow_credentials=True,
     )
-    app.include_router(create_root_router())
-
-    app.add_exception_handler(RequestValidationError, validation_exception_handler)
-    app.add_exception_handler(ValidationError, validation_exception_handler)
-    app.add_exception_handler(
-        BusinessLogicError, transform_business_logic_exception_handler
-    )
-
-    app.dependency_overrides = {
-        DependencyStub("user_service"): lambda: UserService(mongodb_client),
-        DependencyStub("contact_service"): lambda: RelationshipService(mongodb_client),
-        DependencyStub("conversation_service"): lambda: ConversationService(
-            mongodb_client
-        ),
-        DependencyStub("socketio_client"): SingletonDependency(socketio_client),
-    }
-
-    return app
 
 
 async def provide_additional_headers_to_openapi(

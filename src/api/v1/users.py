@@ -3,17 +3,22 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastapi import APIRouter
+from fastapi import Body
 from fastapi import Depends
+from fastapi import File
+from fastapi import Form
 from fastapi import HTTPException
 from fastapi import Response
+from fastapi import UploadFile
 from starlette.status import HTTP_204_NO_CONTENT
+from starlette.status import HTTP_400_BAD_REQUEST
 from starlette.status import HTTP_404_NOT_FOUND
 
 from src.schemas.user import AccountScheme
+from src.schemas.user import CheckUsernameAvailabilitySchema
 from src.schemas.user import ExistsResponseSchema
 from src.schemas.user import UserInputSchema
 from src.schemas.user import UserOutputSchema
-from src.schemas.user import UserUpdateSchema
 from src.services.user_service import UserService
 from src.utils.auth import UserCredentials
 from src.utils.auth import get_current_user_credentials
@@ -38,16 +43,16 @@ async def create_user(
     return UserOutputSchema.from_orm(user)
 
 
-@router.get("/availability/{username}/", response_model=ExistsResponseSchema)
+@router.post("/availability", response_model=ExistsResponseSchema)
 async def check_if_username_is_occupied(
-    username: str,
+    payload: Annotated[CheckUsernameAvailabilitySchema, Body(...)],
     user_service: Annotated[UserService, Depends(DependencyStub("user_service"))],
 ):
-    return {"exists": await user_service.does_user_exists(username)}
+    return {"exists": await user_service.does_user_exists(payload.username)}
 
 
-@router.patch(
-    "/{user_id}/",
+@router.post(
+    "/{user_id}",
     status_code=HTTP_204_NO_CONTENT,
     summary="Update a user",
     description="Update user",
@@ -55,10 +60,17 @@ async def check_if_username_is_occupied(
 )
 async def update_user(
     user_id: str,
-    user_update_data: UserUpdateSchema,
     user_service: Annotated[UserService, Depends(DependencyStub("user_service"))],
+    username: Annotated[str | None, Form()] = None,
+    image: Annotated[UploadFile | None, File()] = None,
 ):
-    await user_service.update_user(user_id, **user_update_data.dict(exclude_none=True))
+    if username is None and image is None:
+        raise HTTPException(
+            status_code=HTTP_400_BAD_REQUEST,
+            detail="Username or image must be provided",
+        )
+
+    await user_service.update_user(user_id, username, image)
     return Response(status_code=HTTP_204_NO_CONTENT)
 
 
@@ -86,7 +98,7 @@ async def get_user_by_filters(
     return UserOutputSchema.from_orm(user)
 
 
-@router.get("/me/", status_code=200, summary="Get current user")
+@router.get("/me", status_code=200, summary="Get current user")
 async def get_current_user(
     user_credentials: Annotated[UserCredentials, Depends(get_current_user_credentials)],
     user_service: Annotated[UserService, Depends(DependencyStub("user_service"))],
@@ -97,7 +109,7 @@ async def get_current_user(
 
 
 @router.delete(
-    "/{user_id}/",
+    "/{user_id}",
     status_code=HTTP_204_NO_CONTENT,
     summary="Delete a user",
     description="Delete a user",
@@ -111,7 +123,7 @@ async def delete_user(
     return Response(status_code=HTTP_204_NO_CONTENT)
 
 
-@router.post("/link/", status_code=200, summary="Link account")
+@router.post("/link", status_code=200, summary="Link account")
 async def link_account(
     account: AccountScheme,
     user_service: Annotated[UserService, Depends(DependencyStub("user_service"))],
@@ -121,7 +133,7 @@ async def link_account(
 
 
 @router.post(
-    "/unlink/{provider_name}/{provider_id}/", status_code=200, summary="Link account"
+    "/unlink/{provider_name}/{provider_id}", status_code=200, summary="Link account"
 )
 async def unlink_account(
     provider_name: str,
