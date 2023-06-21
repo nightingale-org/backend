@@ -8,6 +8,7 @@ from src.db.models.relationship import Relationship
 from src.db.models.relationship import RelationshipType
 from src.exceptions import BusinessLogicError
 from src.services.base_service import BaseService
+from src.utils.orm_utils import get_collection_name_from_model
 
 
 class RelationshipService(BaseService):
@@ -20,7 +21,7 @@ class RelationshipService(BaseService):
                 [
                     {
                         "$lookup": {
-                            "from": User.get_settings().name,
+                            "from": get_collection_name_from_model(User),
                             "localField": "initiator_id",
                             "foreignField": "_id",
                             "as": "initiator",

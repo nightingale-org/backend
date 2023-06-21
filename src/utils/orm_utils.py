@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from beanie import Document
 from bson import ObjectId
 
 
@@ -13,3 +14,7 @@ def compare_id(column: Any, value: str) -> bool:
     """
     # TODO: create issue in the beanie repo
     return column == ObjectId(value)
+
+
+def get_collection_name_from_model(model: type[Document]) -> str:
+    return model.get_settings().name or model.__name__.lower()

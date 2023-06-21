@@ -14,7 +14,7 @@ from src.utils.pydantic_utils import Username
 class User(Document):
     username: Indexed(Username, unique=True) | None = None
     image: str | None = None
-    about_me: str | None = None
+    bio: str | None = None
     email: str
     email_verified_at: datetime | None = Field(alias="emailVerified")
     created_at: datetime | None = Field(default_factory=datetime.utcnow)

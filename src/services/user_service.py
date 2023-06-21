@@ -20,6 +20,7 @@ from src.utils.s3 import upload_file
 
 if TYPE_CHECKING:
     from src.schemas.user import AccountScheme
+    from src.schemas.user import UserUpdateSchema
 
 
 class UserService(BaseService):
@@ -69,17 +70,19 @@ class UserService(BaseService):
         return account.user if account else None
 
     async def update_user(
-        self, user_id: str, username: str | None = None, image: UploadFile | None = None
+        self,
+        user_id: str,
+        user_update_schema: UserUpdateSchema,
+        image: UploadFile | None = None,
     ) -> None:
-        data: dict[str, Any] = {}
+        data: dict[str, Any] = user_update_schema.dict(
+            exclude_unset=True, exclude_defaults=True
+        )
         if image:
             image_url = await upload_file(
                 self._s3_client, image, return_public_url=True
             )
             data["image"] = image_url
-
-        if username:
-            data["username"] = username
 
         await User.find_one(compare_id(User.id, user_id)).update(
             Set(map_raw_data_to_pydantic_fields(data, User)),

@@ -10,8 +10,8 @@ from fastapi import Form
 from fastapi import HTTPException
 from fastapi import Response
 from fastapi import UploadFile
+from pyfa_converter import PyFaDepends
 from starlette.status import HTTP_204_NO_CONTENT
-from starlette.status import HTTP_400_BAD_REQUEST
 from starlette.status import HTTP_404_NOT_FOUND
 
 from src.schemas.user import AccountScheme
@@ -19,6 +19,7 @@ from src.schemas.user import CheckUsernameAvailabilitySchema
 from src.schemas.user import ExistsResponseSchema
 from src.schemas.user import UserInputSchema
 from src.schemas.user import UserOutputSchema
+from src.schemas.user import UserUpdateSchema
 from src.services.user_service import UserService
 from src.utils.auth import UserCredentials
 from src.utils.auth import get_current_user_credentials
@@ -44,7 +45,7 @@ async def create_user(
 
 
 @router.post("/availability", response_model=ExistsResponseSchema)
-async def check_if_username_is_occupied(
+async def check_if_username_is_available(
     payload: Annotated[CheckUsernameAvailabilitySchema, Body(...)],
     user_service: Annotated[UserService, Depends(DependencyStub("user_service"))],
 ):
@@ -61,16 +62,12 @@ async def check_if_username_is_occupied(
 async def update_user(
     user_id: str,
     user_service: Annotated[UserService, Depends(DependencyStub("user_service"))],
-    username: Annotated[str | None, Form()] = None,
+    user_update_input: UserUpdateSchema = PyFaDepends(
+        model=UserUpdateSchema, _type=Form
+    ),
     image: Annotated[UploadFile | None, File()] = None,
 ):
-    if username is None and image is None:
-        raise HTTPException(
-            status_code=HTTP_400_BAD_REQUEST,
-            detail="Username or image must be provided",
-        )
-
-    await user_service.update_user(user_id, username, image)
+    await user_service.update_user(user_id, user_update_input, image)
     return Response(status_code=HTTP_204_NO_CONTENT)
 
 
