@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
 
 import humps
 
@@ -9,7 +8,6 @@ from bson import ObjectId
 from pydantic import BaseModel
 from pydantic import EmailStr
 from pydantic import Field
-from pydantic import root_validator
 from pydantic import validator
 
 
@@ -34,12 +32,6 @@ class UserUpdateSchema(BaseModel):
             return ""
 
         return v
-
-    @root_validator
-    def validate_at_least_one_field(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if not any(values.values()):
-            raise ValueError("At least one field must be provided")
-        return values
 
 
 class CheckUsernameAvailabilitySchema(BaseModel):
