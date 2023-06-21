@@ -78,6 +78,10 @@ class UserService(BaseService):
         data: dict[str, Any] = user_update_schema.dict(
             exclude_unset=True, exclude_defaults=True
         )
+
+        if not data and not image:
+            raise BusinessLogicError("No data to update")
+
         if image:
             image_url = await upload_file(
                 self._s3_client, image, return_public_url=True
