@@ -51,7 +51,7 @@ async def get_relationships(
 
 
 @router.put("/", status_code=HTTP_201_CREATED)
-async def add_relationship(
+async def establish_relationship(
     relationship_payload: CreateRelationshipInputSchema,
     relationship_service: Annotated[
         RelationshipService, Depends(DependencyStub("contact_service"))
