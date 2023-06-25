@@ -52,4 +52,5 @@ async def logging_middleware(request: Request, call_next) -> Response:
             duration_ms=process_time / 10**6,
         )
         response.headers["X-Process-Time"] = str(process_time / 10**9)
-        return response  # noqa: B012
+
+    return response

@@ -8,7 +8,7 @@ from src.api.v1 import users
 
 
 def create_root_router() -> APIRouter:
-    router = APIRouter(prefix="/api/v1", redirect_slashes=False)
+    router = APIRouter(prefix="/api/v1")
     router.include_router(users.router)
     router.include_router(relationships.router)
     router.include_router(conversations.router)

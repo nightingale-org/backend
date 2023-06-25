@@ -4,7 +4,7 @@ from datetime import datetime
 
 import humps
 
-from bson import ObjectId
+from beanie import PydanticObjectId
 from pydantic import BaseModel
 from pydantic import EmailStr
 from pydantic import Field
@@ -56,7 +56,7 @@ class UserOutputSchema(BaseModel):
         orm_mode = True
 
     @validator("id", pre=True)
-    def convert_object_id(cls, value: ObjectId) -> str:
+    def convert_object_id(cls, value: PydanticObjectId) -> str:
         return str(value)
 
 

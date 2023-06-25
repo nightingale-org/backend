@@ -5,6 +5,7 @@ from typing import Any
 
 import aioboto3
 
+from beanie import PydanticObjectId
 from beanie.odm.operators.update.general import Set
 from fastapi import UploadFile
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -71,7 +72,7 @@ class UserService(BaseService):
 
     async def update_user(
         self,
-        user_id: str,
+        user_id: PydanticObjectId,
         user_update_schema: UserUpdateSchema,
         image: UploadFile | None = None,
     ) -> None:
@@ -88,7 +89,7 @@ class UserService(BaseService):
             )
             data["image"] = image_url
 
-        await User.find_one(compare_id(User.id, user_id)).update(
+        await User.find_one(User.id == user_id).update(
             Set(map_raw_data_to_pydantic_fields(data, User)),
             session=self._current_session,
         )
