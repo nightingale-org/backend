@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
+from beanie import PydanticObjectId
 from fastapi import APIRouter
 from fastapi import Body
 from fastapi import Depends
@@ -60,7 +61,7 @@ async def check_if_username_is_available(
     response_description="User updated",
 )
 async def update_user(
-    user_id: str,
+    user_id: PydanticObjectId,
     user_service: Annotated[UserService, Depends(DependencyStub("user_service"))],
     user_update_input: UserUpdateSchema = PyFaDepends(
         model=UserUpdateSchema, _type=Form
@@ -120,7 +121,7 @@ async def delete_user(
     return Response(status_code=HTTP_204_NO_CONTENT)
 
 
-@router.post("/link", status_code=200, summary="Link account")
+@router.post("/account/link", status_code=200, summary="Link account")
 async def link_account(
     account: AccountScheme,
     user_service: Annotated[UserService, Depends(DependencyStub("user_service"))],
@@ -130,7 +131,9 @@ async def link_account(
 
 
 @router.post(
-    "/unlink/{provider_name}/{provider_id}", status_code=200, summary="Link account"
+    "/account/unlink/{provider_name}/{provider_id}",
+    status_code=200,
+    summary="Link account",
 )
 async def unlink_account(
     provider_name: str,
