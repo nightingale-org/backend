@@ -56,7 +56,9 @@ class RelationshipService(BaseService):
             raise BusinessLogicError("You can't add yourself to relationships")
 
         await Relationship(
-            initiator_id=initiator.id, partner=relationship_partner
+            initiator_id=initiator.id,
+            with_user=relationship_partner,
+            type=RelationshipType.outgoing_request,
         ).create(session=self._current_session)
 
     async def block_user(self, *, initiator_user_id: str, partner_user_id: str) -> None:

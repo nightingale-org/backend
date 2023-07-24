@@ -21,13 +21,13 @@ class RelationshipType(IntEnum):
 
 
 class Relationship(Document):
-    partner: User
+    with_user: User
     type: RelationshipType
     initiator_id: PydanticObjectId
 
     class Settings:
         indexes = [
             "type",
-            IndexModel([("partner._id", TEXT), ("initiator_id", TEXT)], unique=True),
+            IndexModel([("with_user._id", TEXT), ("initiator_id", TEXT)], unique=True),
         ]
         name = "relationships"

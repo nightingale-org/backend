@@ -186,5 +186,5 @@ app = create_app()
 if __name__ == "__main__":
     setup_logging(json_logs=not app_config.debug, log_level=app_config.logging_level)
     uvicorn.run(
-        app="main:app", reload=True, host="localhost", port=8000, access_log=False
+        app="main:app", reload=True, host="localhost", port=5001, access_log=False
     )
