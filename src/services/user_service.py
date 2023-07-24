@@ -85,7 +85,11 @@ class UserService(BaseService):
 
         if image:
             image_url = await upload_file(
-                self._s3_client, image, return_public_url=True
+                self._s3_client,
+                image,
+                return_public_url=True,
+                cache_file=False,
+                file_name_prefix=str(user_id),
             )
             data["image"] = image_url
 
