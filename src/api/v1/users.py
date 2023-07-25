@@ -53,7 +53,9 @@ async def check_if_username_is_available(
     payload: Annotated[CheckUsernameAvailabilitySchema, Body(...)],
     user_service: Annotated[UserService, Depends(DependencyStub("user_service"))],
 ):
-    return {"exists": await user_service.does_user_exists(payload.username)}
+    return {
+        "exists": await user_service.does_user_exists_caseinsensetive(payload.username)
+    }
 
 
 @router.post(

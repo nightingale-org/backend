@@ -9,6 +9,8 @@ from beanie import PydanticObjectId
 from beanie.odm.operators.update.general import Set
 from fastapi import UploadFile
 from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo.collation import Collation
+from pymongo.collation import CollationStrength
 
 from src.db.models import Account
 from src.db.models import User
@@ -44,10 +46,21 @@ class UserService(BaseService):
             filters, fetch_links=True, session=self._current_session
         )
 
-    async def does_user_exists(self, username: str) -> bool:
-        return await User.find_one(
-            User.username == username, session=self._current_session
-        ).exists()
+    async def does_user_exists_caseinsensetive(self, username: str) -> bool:
+        return (
+            len(
+                await User.find(
+                    User.username == username,
+                    session=self._current_session,
+                    collation=Collation(
+                        locale="en", strength=CollationStrength.SECONDARY
+                    ),
+                )
+                .limit(1)
+                .to_list()
+            )
+            > 0
+        )
 
     async def get_user_by_id(self, user_id: str) -> User | None:
         return await User.get(user_id, fetch_links=True, session=self._current_session)

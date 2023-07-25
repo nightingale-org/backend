@@ -3,16 +3,16 @@ from __future__ import annotations
 from datetime import datetime
 
 from beanie import Document
-from beanie import Indexed
 from beanie import Link
 from beanie import PydanticObjectId
 from pydantic import Field
-
-from src.utils.pydantic_utils import Username
+from pymongo import IndexModel
+from pymongo.collation import Collation
+from pymongo.collation import CollationStrength
 
 
 class User(Document):
-    username: Indexed(Username, unique=True) | None = None
+    username: str | None = None
     image: str | None = None
     bio: str | None = None
     email: str
@@ -22,6 +22,13 @@ class User(Document):
     class Settings:
         name = "users"
         use_state_management = True
+        indexes = [
+            IndexModel(
+                "username",
+                unique=True,
+                collation=Collation(locale="en", strength=CollationStrength.SECONDARY),
+            ),
+        ]
 
 
 class Account(Document):
