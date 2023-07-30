@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import functools
+import sys
 
 from contextlib import asynccontextmanager
 from typing import Annotated
@@ -40,6 +42,9 @@ from src.utils.custom_logging import setup_logging
 from src.utils.socketio_utils import IdempotentSocketIOAsyncClient
 from src.utils.stub import DependencyStub
 from src.utils.stub import SingletonDependency
+
+
+logger: structlog.stdlib.BoundLogger = structlog.get_logger(__name__)
 
 
 def create_app() -> FastAPI:
@@ -170,10 +175,19 @@ async def transform_business_logic_exception_handler(
 
 @asynccontextmanager
 async def lifespan(application: FastAPI, mongodb_client: AsyncIOMotorClient):
-    await init_beanie(
-        database=getattr(mongodb_client, app_config.database_name),
-        document_models=gather_documents(),
-    )
+    logger.info("Trying to init beanie and connect to MongoDB...")
+    try:
+        async with asyncio.timeout(5):
+            await init_beanie(
+                database=getattr(mongodb_client, app_config.database_name),
+                document_models=gather_documents(),
+            )
+    except asyncio.TimeoutError:
+        logger.error(
+            "Failed to connect to MongoDB within 5 seconds. "
+            "Check credentials of mongodb and is the mongodb instance running Exiting application..."
+        )
+        sys.exit(1)
     yield
     socketio_client: socketio.AsyncClient = application.dependency_overrides[
         DependencyStub("socketio_client")
