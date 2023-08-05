@@ -1,14 +1,16 @@
 from __future__ import annotations
 
+from beanie import PydanticObjectId
 from pydantic import BaseModel
 
 from src.db.models import User
-from src.db.models.relationship import RelationshipType
+from src.db.models.relationship import RelationshipTypeFlags
 
 
 class RelationshipSchema(BaseModel):
-    with_user: User
-    type: RelationshipType
+    user: User
+    type: RelationshipTypeFlags
+    initiator_user_id: PydanticObjectId
 
 
 class CreateRelationshipInputSchema(BaseModel):

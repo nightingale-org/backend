@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from enum import IntEnum
+import enum
+
 from typing import TYPE_CHECKING
+
+import pymongo
 
 from beanie import Document
 from beanie import PydanticObjectId
-from pymongo import TEXT
 from pymongo import IndexModel
 
 
@@ -13,21 +15,27 @@ if TYPE_CHECKING:
     from src.db.models import User
 
 
-class RelationshipType(IntEnum):
-    ingoing_request = 1
-    outgoing_request = 2
-    blocked = 3
-    established = 4
+@enum.unique
+class RelationshipTypeFlags(enum.IntFlag):
+    ingoing_request = enum.auto()
+    outgoing_request = enum.auto()
+    blocked = enum.auto()
+    established = enum.auto()
 
 
 class Relationship(Document):
-    with_user: User
-    type: RelationshipType
-    initiator_id: PydanticObjectId
+    target: User
+    type: RelationshipTypeFlags
+    initiator_user_id: PydanticObjectId
 
     class Settings:
         indexes = [
-            "type",
-            IndexModel([("with_user._id", TEXT), ("initiator_id", TEXT)], unique=True),
+            IndexModel(
+                [
+                    ("user._id", pymongo.ASCENDING),
+                    ("initiator_user_id", pymongo.ASCENDING),
+                ],
+                unique=True,
+            ),
         ]
         name = "relationships"
