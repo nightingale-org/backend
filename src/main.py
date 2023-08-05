@@ -134,7 +134,7 @@ def _setup_middlewares(app: FastAPI) -> None:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:8080"],
+        allow_origins=["http://localhost:8080", "http://localhost:3000"],
         allow_methods=["*"],
         allow_headers=["*"],
         allow_credentials=True,
@@ -169,7 +169,7 @@ async def transform_business_logic_exception_handler(
 ):
     return JSONResponse(
         status_code=HTTP_400_BAD_REQUEST,
-        content=jsonable_encoder({"detail": exc.message}),
+        content=jsonable_encoder({"detail": exc.detail, "code": exc.code}),
     )
 
 

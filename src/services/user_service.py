@@ -94,7 +94,7 @@ class UserService(BaseService):
         )
 
         if not data and not image:
-            raise BusinessLogicError("No data to update")
+            raise BusinessLogicError("No data to update", "no_data_to_update")
 
         if image:
             image_url = await upload_file(
@@ -120,7 +120,7 @@ class UserService(BaseService):
     async def link_account(self, user_id: str, account: AccountScheme):
         user = await User.get(user_id, fetch_links=False, session=self._current_session)
         if not user:
-            raise BusinessLogicError("User not found")
+            raise BusinessLogicError("User not found", "user_not_found")
 
         await Account(**account.dict(), user=user).create()
 

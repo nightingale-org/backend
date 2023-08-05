@@ -17,7 +17,7 @@ class MessageService(BaseService):
         sender = await User.get(sender_id, session=self._current_session)
 
         if not sender:
-            raise BusinessLogicError("Sender not found.")
+            raise BusinessLogicError("Sender not found.", "sender_not_found")
 
         conversation.messages.append(
             Message(text=text, author=await User.get(sender_id))
