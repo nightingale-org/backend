@@ -10,10 +10,6 @@ from src.db.models.user import User
 
 
 def gather_documents() -> list[type[Document]]:
-    Relationship.update_forward_refs(User=User)
-    Conversation.update_forward_refs(User=User)
-    Message.update_forward_refs(User=User)
-
     return [Account, Relationship, User, Conversation, Message]
 
 

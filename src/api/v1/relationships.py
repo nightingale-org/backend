@@ -5,15 +5,14 @@ from typing import Annotated
 from fastapi import APIRouter
 from fastapi import Depends
 from pydantic import PositiveInt
-from pydantic import parse_obj_as
 from starlette.responses import Response
 from starlette.status import HTTP_200_OK
 from starlette.status import HTTP_201_CREATED
 
-from src.db.models.relationship import RelationshipTypeFlags
+from src.db.models.relationship import RelationshipType
 from src.schemas.relationship import BlockUserSchema
 from src.schemas.relationship import CreateRelationshipInputSchema
-from src.schemas.relationship import RelationshipSchema
+from src.schemas.relationship import RelationshipListItemSchema
 from src.services.relationship_service import RelationshipService
 from src.utils.auth import UserCredentials
 from src.utils.auth import get_current_user_credentials
@@ -29,29 +28,26 @@ router = APIRouter(
 )
 
 
-@router.get("/")
+@router.get(
+    "/", response_model_by_alias=False, response_model=list[RelationshipListItemSchema]
+)
 async def get_relationships(
     relationship_service: Annotated[
         RelationshipService, Depends(DependencyStub("contact_service"))
     ],
     user_credentials: Annotated[UserCredentials, Depends(get_current_user_credentials)],
     relationship_type: Annotated[
-        RelationshipTypeFlags,
+        RelationshipType,
         Depends(
-            int_enum_query(
-                "type", RelationshipTypeFlags, default=RelationshipTypeFlags.established
-            )
+            int_enum_query("type", RelationshipType, default=RelationshipType.settled)
         ),
     ],
     limit: PositiveInt = 20,
-) -> list[RelationshipSchema]:
-    return parse_obj_as(
-        list[RelationshipSchema],
-        await relationship_service.get_relationships(
-            relationship_type_flags=relationship_type,
-            email=user_credentials.email,
-            limit=limit,
-        ),
+):
+    return await relationship_service.get_relationships(
+        relationship_type=relationship_type,
+        email=user_credentials.email,
+        limit=limit,
     )
 
 

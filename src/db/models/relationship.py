@@ -15,24 +15,22 @@ if TYPE_CHECKING:
     from src.db.models import User
 
 
-@enum.unique
-class RelationshipTypeFlags(enum.IntFlag):
-    ingoing_request = enum.auto()
-    outgoing_request = enum.auto()
+class RelationshipType(enum.IntEnum):
+    pending = enum.auto()
     blocked = enum.auto()
-    established = enum.auto()
+    settled = enum.auto()
 
 
 class Relationship(Document):
     target: User
-    type: RelationshipTypeFlags
+    type: RelationshipType
     initiator_user_id: PydanticObjectId
 
     class Settings:
         indexes = [
             IndexModel(
                 [
-                    ("user._id", pymongo.ASCENDING),
+                    ("target._id", pymongo.ASCENDING),
                     ("initiator_user_id", pymongo.ASCENDING),
                 ],
                 unique=True,

@@ -11,7 +11,6 @@ from fastapi import Form
 from fastapi import HTTPException
 from fastapi import Response
 from fastapi import UploadFile
-from pyfa_converter import PyFaDepends
 from starlette.status import HTTP_204_NO_CONTENT
 from starlette.status import HTTP_404_NOT_FOUND
 
@@ -25,6 +24,7 @@ from src.services.user_service import UserService
 from src.utils.auth import UserCredentials
 from src.utils.auth import get_current_user_credentials
 from src.utils.auth import validate_jwt_token
+from src.utils.pydantic_utils import Username
 from src.utils.stub import DependencyStub
 
 
@@ -44,8 +44,8 @@ async def create_user(
     user: UserInputSchema,
     user_service: Annotated[UserService, Depends(DependencyStub("user_service"))],
 ) -> UserOutputSchema:
-    user = await user_service.create_user(**user.dict())
-    return UserOutputSchema.from_orm(user)
+    user = await user_service.create_user(**user.model_dump())
+    return UserOutputSchema.model_validate(user)
 
 
 @router.post("/availability", response_model=ExistsResponseSchema)
@@ -68,12 +68,14 @@ async def check_if_username_is_available(
 async def update_user(
     user_id: PydanticObjectId,
     user_service: Annotated[UserService, Depends(DependencyStub("user_service"))],
-    user_update_input: UserUpdateSchema = PyFaDepends(
-        model=UserUpdateSchema, _type=Form
-    ),
-    image: Annotated[UploadFile | None, File()] = None,
+    bio: Annotated[str, Form()] = None,
+    image: Annotated[UploadFile, File()] = None,
+    username: Username = Form(None),
 ):
-    await user_service.update_user(user_id, user_update_input, image)
+    # TODO: maybe write a custom thing that would allow to validate form data through a pydantic model altogether
+    await user_service.update_user(
+        user_id, UserUpdateSchema(username=username, bio=bio, image=image)
+    )
     return Response(status_code=HTTP_204_NO_CONTENT)
 
 
@@ -97,8 +99,7 @@ async def get_user_by_filters(
     )
     if user is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="User not found")
-
-    return UserOutputSchema.from_orm(user)
+    return UserOutputSchema.model_validate(user)
 
 
 @router.get("/me", status_code=200, summary="Get current user")
@@ -106,7 +107,7 @@ async def get_current_user(
     user_credentials: Annotated[UserCredentials, Depends(get_current_user_credentials)],
     user_service: Annotated[UserService, Depends(DependencyStub("user_service"))],
 ) -> UserOutputSchema:
-    return UserOutputSchema.from_orm(
+    return UserOutputSchema.model_validate(
         await user_service.get_user_by_email(user_credentials.email)
     )
 

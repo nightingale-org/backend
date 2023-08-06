@@ -28,6 +28,6 @@ def int_enum_query(
         )
     ):
         # Validation error will be handled by FastAPI
-        return pydantic_model(enum=q).enum
+        return pydantic_model(enum=q).enum  # type: ignore[call-arg]
 
     return inner

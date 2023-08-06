@@ -2,36 +2,29 @@ from __future__ import annotations
 
 from datetime import datetime
 
-import humps
-
 from beanie import PydanticObjectId
+from fastapi import UploadFile
 from pydantic import BaseModel
+from pydantic import ConfigDict
 from pydantic import EmailStr
 from pydantic import Field
-from pydantic import validator
+from pydantic import field_validator
+
+from src.utils.pydantic_utils import Username
 
 
 class UserInputSchema(BaseModel):
-    username: str = None
+    username: Username = None
     bio: str = None
     email: EmailStr
-    email_verified_at: datetime | None
+    email_verified_at: datetime | None = None
     image: str = None
-
-    class Config:
-        alias_generator = humps.camelize
 
 
 class UserUpdateSchema(BaseModel):
-    username: str = None
-    bio: str | None = ""
-
-    @validator("bio")
-    def validate_bio(cls, v: str) -> str:
-        if v is None:
-            return ""
-
-        return v
+    username: Username | None
+    bio: str | None
+    image: UploadFile | None
 
 
 class CheckUsernameAvailabilitySchema(BaseModel):
@@ -44,18 +37,16 @@ class ExistsResponseSchema(BaseModel):
 
 class UserOutputSchema(BaseModel):
     id: str
-    bio: str | None
-    username: str | None
+    bio: str | None = None
+    username: Username | None = None
     email: EmailStr
-    email_verified: datetime | None
+    email_verified: datetime | None = None
     image: str = None
-    created_at: datetime | None
+    created_at: datetime | None = None
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        alias_generator = humps.camelize
-        orm_mode = True
-
-    @validator("id", pre=True)
+    @field_validator("id", mode="before")
+    @classmethod
     def convert_object_id(cls, value: PydanticObjectId) -> str:
         return str(value)
 

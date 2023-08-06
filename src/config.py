@@ -6,11 +6,12 @@ from typing import Any
 from typing import Final
 from typing import Literal
 
-from pydantic import BaseSettings
 from pydantic import Field
-from pydantic import root_validator
+from pydantic import model_validator
 from pydantic.networks import MongoDsn
 from pydantic.networks import RedisDsn
+from pydantic_settings import BaseSettings
+from pydantic_settings import SettingsConfigDict
 
 from src.utils import git
 
@@ -22,10 +23,14 @@ TOKEN_STATE_KEY: Final[str] = "user"
 
 
 class AppConfig(BaseSettings):
-    db_url: MongoDsn = Field(env="DATABASE_URL")
-    database_name: str = Field(env="DATABASE_NAME")
+    model_config = SettingsConfigDict(
+        env_file=(ENV_EXAMPLE_FILE_PATH, ENV_PROD_FILE_PATH), env_file_encoding="utf-8"
+    )
 
-    redis_dsn: RedisDsn = Field(env="REDIS_DSN")
+    db_url: MongoDsn = Field(validation_alias="DATABASE_URL")
+    database_name: str = Field(validation_alias="DATABASE_NAME")
+
+    redis_dsn: RedisDsn = Field(validation_alias="REDIS_DSN")
 
     openapi_title: str
     openapi_description: str
@@ -34,8 +39,8 @@ class AppConfig(BaseSettings):
     debug: bool = True
     logging_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "DEBUG"
 
-    auth0_domain: str = Field(env="AUTH0_DOMAIN")
-    auth0_audience: str = Field(env="AUTH0_AUDIENCE")
+    auth0_domain: str = Field(validation_alias="AUTH0_DOMAIN")
+    auth0_audience: str = Field(validation_alias="AUTH0_AUDIENCE")
     auth0_jwt_issuer: str
 
     s3_bucket_name: str
@@ -45,19 +50,16 @@ class AppConfig(BaseSettings):
 
     test_db_name: str = "test_database"
 
-    @root_validator(pre=True)
-    def set_version_from_git(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if "version" not in values:
-            values["version"] = git.get_revision_hash()
+    @model_validator(mode="before")
+    @classmethod
+    def set_version_from_git(cls, data: dict[str, Any]) -> dict[str, Any]:
+        if "version" not in data:
+            data["version"] = git.get_revision_hash()
 
-        auth0_domain = values["auth0_domain"]
-        values["auth0_jwt_issuer"] = f"https://{auth0_domain}/"
+        auth0_domain = data["AUTH0_DOMAIN"]
+        data["auth0_jwt_issuer"] = f"https://{auth0_domain}/"
 
-        return values
-
-    class Config:
-        env_file = (ENV_EXAMPLE_FILE_PATH, ENV_PROD_FILE_PATH)
-        env_file_encoding = "utf-8"
+        return data
 
 
 app_config = AppConfig()

@@ -18,7 +18,7 @@ from jwt.api_jwt import decode_complete
 from jwt.exceptions import PyJWKClientConnectionError
 from jwt.exceptions import PyJWKClientError
 from pydantic import BaseModel
-from pydantic import Extra
+from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import ValidationError
 
@@ -116,9 +116,7 @@ _async_jwks_client = AsyncJWKClient(
 class UserCredentials(BaseModel):
     provider_account_id: str = Field(alias="sub")
     email: str
-
-    class Config:
-        extra = Extra.allow
+    model_config = ConfigDict(extra="allow")
 
 
 async def validate_jwt_token(

@@ -1,13 +1,14 @@
 from __future__ import annotations
 
+from typing import Any
+
 from beanie import PydanticObjectId
-from beanie.odm.operators.find.logical import Or
 from beanie.odm.operators.update.general import Set
 from pymongo.errors import DuplicateKeyError
 
 from src.db.models import User
 from src.db.models.relationship import Relationship
-from src.db.models.relationship import RelationshipTypeFlags
+from src.db.models.relationship import RelationshipType
 from src.exceptions import BusinessLogicError
 from src.services.base_service import BaseService
 from src.utils.orm_utils import get_collection_name_from_model
@@ -16,21 +17,29 @@ from src.utils.orm_utils import get_collection_name_from_model
 class RelationshipService(BaseService):
     async def get_relationships(
         self,
-        relationship_type_flags: RelationshipTypeFlags,
+        relationship_type: RelationshipType,
         email: str,
         limit: int = 20,
-    ) -> list[Relationship]:
-        relationship_types = list(relationship_type_flags)
+    ) -> list[dict[str, Any]]:
+        if relationship_type == RelationshipType.blocked:
+            match_item = {"initiator.email": email}
+        else:
+            match_item = {"$or": [{"target.email": email}, {"initiator.email": email}]}
+
+        expand_type_step: dict[str, Any] = {}
+        if relationship_type == RelationshipType.pending:
+            expand_type_step = {
+                "type": {
+                    "$cond": {
+                        "if": {"$eq": ["$initiator.email", email]},
+                        "then": "outgoing",
+                        "else": "ingoing",
+                    }
+                },
+            }
 
         return (
-            await Relationship.find(
-                Or(
-                    *[
-                        Relationship.type == relationship_type
-                        for relationship_type in relationship_types
-                    ]
-                )
-            )
+            await Relationship.find(Relationship.type == relationship_type)
             .aggregate(
                 [
                     {
@@ -42,14 +51,36 @@ class RelationshipService(BaseService):
                         }
                     },
                     {
-                        "$match": {
-                            "$or": [{"initiator.email": email}, {"target.email": email}]
+                        "$match": match_item,
+                    },
+                    {
+                        "$unwind": "$initiator",
+                    },
+                    {
+                        "$set": {
+                            **expand_type_step,
+                            "target": {
+                                "$cond": {
+                                    "if": {
+                                        "$eq": ["$initiator.email", email],
+                                    },
+                                    "then": "$target",
+                                    "else": "$initiator",
+                                }
+                            },
                         }
                     },
                     {
                         "$limit": limit,
                     },
-                ]
+                    {
+                        "$project": {
+                            "target": 1,
+                            "type": 1,
+                        }
+                    },
+                ],
+                session=self._current_session,
             )
             .to_list()
         )
@@ -75,7 +106,7 @@ class RelationshipService(BaseService):
         friend_request_from_relationship_partner_was_made = await Relationship.find_one(
             {
                 "initiator_user_id": target_user.id,
-                "type": RelationshipTypeFlags.outgoing_request,
+                "type": RelationshipType.pending,
                 "target._id": initiator.id,
             }
         )
@@ -90,7 +121,7 @@ class RelationshipService(BaseService):
             await Relationship(
                 initiator_user_id=initiator.id,
                 target=target_user,
-                type=RelationshipTypeFlags.outgoing_request,
+                type=RelationshipType.pending,
             ).create(session=self._current_session)
         except DuplicateKeyError as ex:
             raise BusinessLogicError(
@@ -105,6 +136,6 @@ class RelationshipService(BaseService):
             fetch_links=True,
             session=self._current_session,
         ).update_one(
-            Set({Relationship.type: RelationshipTypeFlags.blocked}),
+            Set({Relationship.type: RelationshipType.blocked}),
             session=self._current_session,
         )

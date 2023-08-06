@@ -4,13 +4,12 @@ from typing import Generic
 from typing import TypeVar
 
 from pydantic import BaseModel
-from pydantic.generics import GenericModel
 
 
 DataT = TypeVar("DataT", bound=BaseModel)
 
 
-class WebsocketEvent(GenericModel, Generic[DataT]):
+class WebsocketEvent(BaseModel, Generic[DataT]):
     event_name: str
     data: DataT
 

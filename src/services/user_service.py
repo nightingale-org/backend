@@ -7,7 +7,6 @@ import aioboto3
 
 from beanie import PydanticObjectId
 from beanie.odm.operators.update.general import Set
-from fastapi import UploadFile
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.collation import Collation
 from pymongo.collation import CollationStrength
@@ -72,7 +71,9 @@ class UserService(BaseService):
 
     async def get_user_by_email(self, email: str) -> User | None:
         return await User.find_one(
-            {"email": email}, fetch_links=True, session=self._current_session
+            {"email": email},
+            fetch_links=True,
+            session=self._current_session,
         )
 
     async def get_user_by_account(self, provider_account_id: str) -> User | None:
@@ -87,16 +88,13 @@ class UserService(BaseService):
         self,
         user_id: PydanticObjectId,
         user_update_schema: UserUpdateSchema,
-        image: UploadFile | None = None,
     ) -> None:
-        data: dict[str, Any] = user_update_schema.dict(
-            exclude_unset=True, exclude_defaults=True
-        )
+        data: dict[str, Any] = user_update_schema.model_dump(exclude_none=True)
 
-        if not data and not image:
+        if not data:
             raise BusinessLogicError("No data to update", "no_data_to_update")
 
-        if image:
+        if image := data.pop("image", None):
             image_url = await upload_file(
                 self._s3_client,
                 image,
@@ -122,7 +120,7 @@ class UserService(BaseService):
         if not user:
             raise BusinessLogicError("User not found", "user_not_found")
 
-        await Account(**account.dict(), user=user).create()
+        await Account(**account.model_dump(), user=user).create()
 
     async def unlink_account(
         self, provider_account_id: str, provider_name: str

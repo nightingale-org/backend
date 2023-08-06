@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import datetime
 import functools
 import sys
 
@@ -13,6 +14,7 @@ import structlog
 import uvicorn
 
 from beanie import init_beanie
+from bson import CodecOptions
 from ddtrace.contrib.asgi import TraceMiddleware
 from fastapi import FastAPI
 from fastapi import Header
@@ -21,7 +23,6 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import ORJSONResponse
 from motor.motor_asyncio import AsyncIOMotorClient
-from pydantic import ValidationError
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_400_BAD_REQUEST
@@ -80,7 +81,6 @@ def create_app() -> FastAPI:
     app.include_router(create_root_router())
 
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
-    app.add_exception_handler(ValidationError, validation_exception_handler)
     app.add_exception_handler(
         BusinessLogicError, transform_business_logic_exception_handler
     )
@@ -150,13 +150,8 @@ async def provide_additional_headers_to_openapi(
         yield
 
 
-async def validation_exception_handler(
-    request: Request, exc: RequestValidationError | ValidationError
-):
-    data = {"detail": exc.errors()}
-
-    if isinstance(exc, RequestValidationError):
-        data["body"] = exc.body
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    data = {"detail": exc.errors(), "body": exc.body}
 
     return JSONResponse(
         status_code=HTTP_400_BAD_REQUEST,
@@ -179,7 +174,10 @@ async def lifespan(application: FastAPI, mongodb_client: AsyncIOMotorClient):
     try:
         async with asyncio.timeout(5):
             await init_beanie(
-                database=getattr(mongodb_client, app_config.database_name),
+                database=mongodb_client.get_database(
+                    app_config.database_name,
+                    CodecOptions(tz_aware=True, tzinfo=datetime.UTC),
+                ),
                 document_models=gather_documents(),
             )
     except asyncio.TimeoutError:
@@ -188,6 +186,7 @@ async def lifespan(application: FastAPI, mongodb_client: AsyncIOMotorClient):
             "Check credentials of mongodb and is the mongodb instance running Exiting application..."
         )
         sys.exit(1)
+    logger.info("Successfully connected to MongoDB and initialized beanie")
     yield
     socketio_client: socketio.AsyncClient = application.dependency_overrides[
         DependencyStub("socketio_client")

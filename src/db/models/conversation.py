@@ -1,15 +1,18 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import TYPE_CHECKING
+from typing import Annotated
 
 from beanie import BackLink
 from beanie import Document
 from beanie import Link
+from pydantic import AwareDatetime
 from pydantic import Field
-from pydantic import conint
-from pydantic import root_validator
-from pydantic import validator
+from pydantic import field_validator
+from pydantic import model_validator
+from pydantic_core.core_schema import FieldValidationInfo
+
+from src.utils.datetime_utils import current_timeaware_utc
 
 
 if TYPE_CHECKING:
@@ -18,7 +21,7 @@ if TYPE_CHECKING:
 
 class Message(Document):
     text: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: AwareDatetime = Field(default_factory=current_timeaware_utc)
 
     seen_by: list[Link[User]] = Field(default_factory=list)
     conversation: BackLink[Conversation] = Field(original_field="messages")
@@ -31,22 +34,20 @@ class Message(Document):
 
 
 class Conversation(Document):
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    last_message_at: datetime | None = Field(default_factory=datetime.utcnow)
+    created_at: AwareDatetime = Field(default_factory=current_timeaware_utc)
+    last_message_at: AwareDatetime | None = Field(default_factory=current_timeaware_utc)
     name: str | None = None
     is_group: bool
-    user_limit: conint(ge=2, strict=True) | None = None
+    user_limit: Annotated[int, Field(ge=2, strict=True)] | None = None
 
-    @root_validator
-    def validate_members(cls, values):
-        if not (is_group := values.get("is_group")) and not isinstance(
-            values.get("is_group"), bool
-        ):
+    @model_validator(mode="after")
+    def validate_members(self):
+        if not self.is_group:
             # is_group field is not set, so we can't validate members. It will raise a ValidationError later anyway.
-            return values
+            return self
 
-        members = values["members"]
-        if len(members) > 2 and not is_group:
+        members = self.members
+        if len(members) > 2 and not self.is_group:
             raise ValueError("is_group must be True for group conversations.")
 
         if len(members) <= 1:
@@ -54,17 +55,19 @@ class Conversation(Document):
                 "Conversation has to have at least 2 members. It can be either a group or a one-to-one conversation."
             )
 
-        return values
+        return self
 
-    @validator("user_limit")
-    def validate_user_limit(cls, v, values):
-        if not values.get("is_group") and v:
+    @field_validator("user_limit")
+    @classmethod
+    def validate_user_limit(cls, v, info: FieldValidationInfo):
+        if not info.data.get("is_group") and v:
             raise ValueError("user_limit can only be set for group conversations.")
         return v
 
-    @validator("name")
-    def validate_name(cls, v, values):
-        if not values.get("is_group") and v:
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v, info: FieldValidationInfo):
+        if not info.data.get("is_group") and v:
             raise ValueError("name can only be set for group conversations.")
         return v
 

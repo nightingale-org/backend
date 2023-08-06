@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import logging
-
 from typing import NoReturn
 
 import socketio.exceptions
+import structlog
 
 from fastapi import HTTPException
 from pydantic import ValidationError
@@ -21,16 +20,17 @@ from src.utils.socketio_utils import validate_data
 from src.utils.socketio_utils import with_request
 
 
-client_manager = socketio.AsyncRedisManager(app_config.redis_dsn)
+client_manager = socketio.AsyncRedisManager(str(app_config.redis_dsn))
 socketio_server = socketio.AsyncServer(
     async_mode="asgi",
-    cors_allowed_origins="*",
+    # this is very important to set it to empty list since CORS is handled by FastAPI, and we don't want to mess with it
+    cors_allowed_origins=[],
     logger=True,
     engineio_logger=True,
     client_manager=client_manager,
 )
 socketio_app = socketio.ASGIApp(socketio_server=socketio_server)
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 _EMAIL_TO_SID_USERS_MAP: dict[str, str] = {}
 
@@ -42,7 +42,7 @@ async def connect(request: Request, sid: str) -> bool | NoReturn:
         authorization_header_data = await token_auth_scheme(request)
     except HTTPException as ex:
         logger.error(
-            ex, "Authorization header is not provided or invalid", extra={"sid": sid}
+            "Authorization header is not provided or invalid", extra={"sid": sid}
         )
         raise socketio.exceptions.ConnectionRefusedError(ex.detail) from ex
 
@@ -51,7 +51,7 @@ async def connect(request: Request, sid: str) -> bool | NoReturn:
             token_payload=await get_token_payload(authorization_header_data.credentials)
         )
     except (ValidationError, TokenInvalidError) as ex:
-        logger.error(ex, "Token is invalid", extra={"sid": sid})
+        logger.error("The access token is invalid", extra={"sid": sid})
         detail = ex.json() if isinstance(ex, ValidationError) else ex.reason
         raise socketio.exceptions.ConnectionRefusedError(detail) from ex
 
