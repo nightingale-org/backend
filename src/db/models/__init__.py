@@ -9,6 +9,9 @@ from src.db.models.user import Account
 from src.db.models.user import User
 
 
+Relationship.model_rebuild()
+
+
 def gather_documents() -> list[type[Document]]:
     return [Account, Relationship, User, Conversation, Message]
 

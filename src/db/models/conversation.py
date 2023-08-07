@@ -12,7 +12,7 @@ from pydantic import field_validator
 from pydantic import model_validator
 from pydantic_core.core_schema import FieldValidationInfo
 
-from src.utils.datetime_utils import current_timeaware_utc
+from src.utils.datetime_utils import current_timeaware_utc_datetime
 
 
 if TYPE_CHECKING:
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 class Message(Document):
     text: str
-    created_at: AwareDatetime = Field(default_factory=current_timeaware_utc)
+    created_at: AwareDatetime = Field(default_factory=current_timeaware_utc_datetime)
 
     seen_by: list[Link[User]] = Field(default_factory=list)
     conversation: BackLink[Conversation] = Field(original_field="messages")
@@ -34,8 +34,10 @@ class Message(Document):
 
 
 class Conversation(Document):
-    created_at: AwareDatetime = Field(default_factory=current_timeaware_utc)
-    last_message_at: AwareDatetime | None = Field(default_factory=current_timeaware_utc)
+    created_at: AwareDatetime = Field(default_factory=current_timeaware_utc_datetime)
+    last_message_at: AwareDatetime | None = Field(
+        default_factory=current_timeaware_utc_datetime
+    )
     name: str | None = None
     is_group: bool
     user_limit: Annotated[int, Field(ge=2, strict=True)] | None = None

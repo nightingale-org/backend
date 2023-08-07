@@ -120,7 +120,9 @@ class UserService(BaseService):
         if not user:
             raise BusinessLogicError("User not found", "user_not_found")
 
-        await Account(**account.model_dump(), user=user).create()
+        await Account(**account.model_dump(), user=user).create(
+            session=self._current_session
+        )
 
     async def unlink_account(
         self, provider_account_id: str, provider_name: str

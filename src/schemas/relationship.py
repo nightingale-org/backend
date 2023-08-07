@@ -5,12 +5,14 @@ import enum
 from typing import Literal
 
 from beanie import PydanticObjectId
+from pydantic import AwareDatetime
 from pydantic import BaseModel
 from pydantic import Field
 from pydantic import field_validator
 
 from src.db.models import User
 from src.db.models.relationship import RelationshipType
+from src.utils.datetime_utils import current_timeaware_utc_datetime
 
 
 class RelationshipTypeExpanded(enum.IntEnum):
@@ -24,6 +26,7 @@ class RelationshipListItemSchema(BaseModel):
     id: PydanticObjectId = Field(alias="_id")
     target: User
     type: RelationshipTypeExpanded
+    created_at: AwareDatetime = Field(default_factory=current_timeaware_utc_datetime)
 
     @field_validator("type", mode="before")
     @classmethod

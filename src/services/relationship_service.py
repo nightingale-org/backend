@@ -48,6 +48,14 @@ class RelationshipService(BaseService):
                             "localField": "initiator_user_id",
                             "foreignField": "_id",
                             "as": "initiator",
+                        },
+                    },
+                    {
+                        "$lookup": {
+                            "from": get_collection_name_from_model(User),
+                            "localField": "target.$id",
+                            "foreignField": "_id",
+                            "as": "target",
                         }
                     },
                     {
@@ -55,6 +63,9 @@ class RelationshipService(BaseService):
                     },
                     {
                         "$unwind": "$initiator",
+                    },
+                    {
+                        "$unwind": "$target",
                     },
                     {
                         "$set": {

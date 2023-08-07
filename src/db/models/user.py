@@ -9,7 +9,7 @@ from pymongo import IndexModel
 from pymongo.collation import Collation
 from pymongo.collation import CollationStrength
 
-from src.utils.datetime_utils import current_timeaware_utc
+from src.utils.datetime_utils import current_timeaware_utc_datetime
 from src.utils.pydantic_utils import Username
 
 
@@ -19,7 +19,9 @@ class User(Document):
     bio: str | None = None
     email: str
     email_verified_at: AwareDatetime | None = Field(alias="emailVerified")
-    created_at: AwareDatetime | None = Field(default_factory=current_timeaware_utc)
+    created_at: AwareDatetime | None = Field(
+        default_factory=current_timeaware_utc_datetime
+    )
 
     class Settings:
         name = "users"
@@ -37,7 +39,9 @@ class Account(Document):
     user_id: PydanticObjectId
     provider_name: str
     provider_account_id: str
-    created_at: AwareDatetime | None = Field(default_factory=current_timeaware_utc)
+    created_at: AwareDatetime | None = Field(
+        default_factory=current_timeaware_utc_datetime
+    )
     user: Link[User]
 
     class Settings:

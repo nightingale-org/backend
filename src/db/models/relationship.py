@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import pymongo
 
 from beanie import Document
+from beanie import Link
 from beanie import PydanticObjectId
 from pymongo import IndexModel
 
@@ -22,7 +23,7 @@ class RelationshipType(enum.IntEnum):
 
 
 class Relationship(Document):
-    target: User
+    target: Link[User]
     type: RelationshipType
     initiator_user_id: PydanticObjectId
 
@@ -30,7 +31,7 @@ class Relationship(Document):
         indexes = [
             IndexModel(
                 [
-                    ("target._id", pymongo.ASCENDING),
+                    ("target.$id", pymongo.ASCENDING),
                     ("initiator_user_id", pymongo.ASCENDING),
                 ],
                 unique=True,
