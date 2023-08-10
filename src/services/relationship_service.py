@@ -1,20 +1,33 @@
 from __future__ import annotations
 
+import asyncio
+
 from typing import Any
 
 from beanie import PydanticObjectId
 from beanie.odm.operators.update.general import Set
+from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import DuplicateKeyError
 
 from src.db.models import User
 from src.db.models.relationship import Relationship
 from src.db.models.relationship import RelationshipType
 from src.exceptions import BusinessLogicError
+from src.schemas.relationship import RelationshipListItemSchema
+from src.schemas.relationship import RelationshipTypeExpanded
+from src.schemas.relationship import UpdateRelationshipStatusPayload
 from src.services.base_service import BaseService
 from src.utils.orm_utils import get_collection_name_from_model
+from src.utils.socketio_utils import SocketIOManager
 
 
 class RelationshipService(BaseService):
+    def __init__(
+        self, db_client: AsyncIOMotorClient, socketio_manager: SocketIOManager
+    ):
+        super().__init__(db_client)
+        self._socketio_manager = socketio_manager
+
     async def get_relationships(
         self,
         relationship_type: RelationshipType,
@@ -96,7 +109,7 @@ class RelationshipService(BaseService):
             .to_list()
         )
 
-    async def establish_relationship(self, username: str, *, initiator_email: str):
+    async def create_friend_request(self, username: str, *, initiator_email: str):
         target_user = await User.find_one(
             User.username == username, session=self._current_session
         )
@@ -129,7 +142,7 @@ class RelationshipService(BaseService):
             )
 
         try:
-            await Relationship(
+            new_relationship = await Relationship(
                 initiator_user_id=initiator.id,
                 target=target_user,
                 type=RelationshipType.pending,
@@ -139,6 +152,59 @@ class RelationshipService(BaseService):
                 "You already have a pending request to this user.",
                 "already_send_request",
             ) from ex
+
+        await asyncio.gather(
+            *[
+                self._socketio_manager.emit_to_user_by_email(
+                    email=target_user.email,
+                    event_name="relationship:new",
+                    payload=RelationshipListItemSchema(
+                        _id=new_relationship.id,
+                        target=initiator,
+                        type=RelationshipTypeExpanded.ingoing_request,
+                    ),
+                    raise_on_not_connected=False,
+                ),
+                self._socketio_manager.emit_to_user_by_email(
+                    email=initiator_email,
+                    event_name="relationship:new",
+                    payload=RelationshipListItemSchema(
+                        _id=new_relationship.id,
+                        target=target_user,
+                        type=RelationshipTypeExpanded.outgoing_request,
+                    ),
+                    raise_on_not_connected=False,
+                ),
+            ]
+        )
+
+        return new_relationship
+
+    async def update_relationship_status(
+        self, payload: UpdateRelationshipStatusPayload, initiator_email: str
+    ):
+        initiator = await User.find_one(
+            User.email == initiator_email, session=self._current_session
+        )
+        if initiator is None:
+            raise BusinessLogicError(
+                "Internal error, user who made a request not found",
+                "requester_not_found",
+            )
+
+        if payload.new_state == "accepted":
+            return await Relationship.find_one(
+                Relationship.id == payload.relationship_id,
+                session=self._current_session,
+            ).update(
+                Set({Relationship.type: RelationshipType.settled}),
+                session=self._current_session,
+            )
+
+        await Relationship.find_one(
+            Relationship.id == payload.relationship_id,
+            session=self._current_session,
+        ).delete(session=self._current_session)
 
     async def block_user(self, *, initiator_user_id: str, partner_user_id: str) -> None:
         await Relationship.find_one(

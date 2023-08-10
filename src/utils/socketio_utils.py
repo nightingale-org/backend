@@ -1,19 +1,21 @@
 from __future__ import annotations
 
+import asyncio
 import functools
 import inspect
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 from typing import Concatenate
 from typing import ParamSpec
 from typing import TypeVar
 
 import socketio.exceptions
+import structlog
 
 from pydantic import BaseModel
 from pydantic import ValidationError
-from socketio.asyncio_client import AsyncClient
 from starlette.requests import Request
 
 
@@ -23,31 +25,90 @@ P = ParamSpec("P")
 CallableT = TypeVar("CallableT", bound=Callable[..., Any])
 
 
-class IdempotentSocketIOAsyncClient(AsyncClient):
-    async def connect(self, *args: Any, **kwargs: Any) -> None:
-        if not self.connected:
-            await super().connect(*args, **kwargs)
+@dataclass
+class SocketIOManagerError(Exception):
+    message: str
+    event_name: str
+    target: Any
+
+    def __str__(self) -> str:
+        return f"An error occurred when trying to send an event {self.event_name} to {self.target}: {self.message}"
 
 
-async def emit_on_connect(
-    socketio_client: AsyncClient,
-    event: str | None = None,
-    data: Any = None,
-    namespace: str | None = None,
-) -> None:
-    if socketio_client.connected:
-        await socketio_client.emit(event, data, namespace)
-        return
+class SocketIOManager:
+    def __init__(self, native_client_manager: socketio.AsyncRedisManager):
+        self._native_client_manager = native_client_manager
+        self._logger: structlog.stdlib.BoundLogger = structlog.get_logger(__name__)
 
-    @socketio_client.on("connect")
-    async def on_connect():
-        await socketio_client.emit(event, data, namespace)
+    async def emit_to_user_by_email(
+        self,
+        email: str,
+        event_name: str,
+        payload: BaseModel,
+        *,
+        raise_on_not_connected: bool = True,
+    ):
+        self._logger.info(
+            "Emitting event to user by email", email=email, event_name=event_name
+        )
+        target_sid = await self._native_client_manager.redis.get(
+            f"socketio:email:sid:{email}"
+        )
+        if target_sid is None and raise_on_not_connected:
+            raise SocketIOManagerError(
+                message="User is not connected to socketio",
+                event_name=event_name,
+                target=email,
+            )
 
-    # noop if already connected
-    # TODO set connection parameters in main function so socket_client doesn't require any arguments to connect
-    await socketio_client.connect(
-        "http://localhost:8000", socketio_path="/ws/socket.io"
-    )
+        if isinstance(target_sid, bytes):
+            target_sid = target_sid.decode("utf-8")
+
+        await self._native_client_manager.emit(
+            event_name, payload.model_dump(mode="json"), room=target_sid
+        )
+        self._logger.info(
+            "Event was successfully emitted to the client",
+            email=email,
+            sid=target_sid,
+            event_name=event_name,
+        )
+
+    async def emit_to_users_in_bulk(
+        self,
+        *emails: str,
+        event_name: str,
+        payload: BaseModel,
+        raise_on_not_connected: bool = True,
+    ):
+        sids: list[str | bytes | None] = await asyncio.gather(
+            *[
+                self._native_client_manager.redis.get(f"socketio:email:sid:{email}")
+                for email in emails
+            ]
+        )
+
+        none_sids = [sid for sid in sids if sid is None]
+        if none_sids and raise_on_not_connected:
+            raise SocketIOManagerError(
+                message="Some users are not connected to socketio",
+                event_name=event_name,
+                target=none_sids,
+            )
+        sids = [
+            sid.decode("utf-8")
+            for sid in sids
+            if sid is not None and isinstance(sid, bytes)
+        ]
+
+        await asyncio.gather(
+            *[
+                self._native_client_manager.emit(
+                    event_name, payload.model_dump(mode="json"), room=sid
+                )
+                for sid in sids
+            ]
+        )
 
 
 def with_request(func: Callable[P, T]) -> Callable[Concatenate[Request, P], T]:

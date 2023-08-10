@@ -76,7 +76,6 @@ async def update_user(
     await user_service.update_user(
         user_id, UserUpdateSchema(username=username, bio=bio, image=image)
     )
-    return Response(status_code=HTTP_204_NO_CONTENT)
 
 
 @router.get(
@@ -107,9 +106,12 @@ async def get_current_user(
     user_credentials: Annotated[UserCredentials, Depends(get_current_user_credentials)],
     user_service: Annotated[UserService, Depends(DependencyStub("user_service"))],
 ) -> UserOutputSchema:
-    return UserOutputSchema.model_validate(
-        await user_service.get_user_by_email(user_credentials.email)
-    )
+    user = await user_service.get_user_by_email(user_credentials.email)
+
+    if user is None:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="User not found")
+
+    return UserOutputSchema.model_validate(user)
 
 
 @router.delete(

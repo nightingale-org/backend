@@ -5,14 +5,16 @@ from typing import Annotated
 from fastapi import APIRouter
 from fastapi import Depends
 from pydantic import PositiveInt
+from starlette import status
 from starlette.responses import Response
 from starlette.status import HTTP_200_OK
 from starlette.status import HTTP_201_CREATED
 
 from src.db.models.relationship import RelationshipType
 from src.schemas.relationship import BlockUserSchema
-from src.schemas.relationship import CreateRelationshipInputSchema
+from src.schemas.relationship import FriendRequestPayload
 from src.schemas.relationship import RelationshipListItemSchema
+from src.schemas.relationship import UpdateRelationshipStatusPayload
 from src.services.relationship_service import RelationshipService
 from src.utils.auth import UserCredentials
 from src.utils.auth import get_current_user_credentials
@@ -33,7 +35,7 @@ router = APIRouter(
 )
 async def get_relationships(
     relationship_service: Annotated[
-        RelationshipService, Depends(DependencyStub("contact_service"))
+        RelationshipService, Depends(DependencyStub("relationship_service"))
     ],
     user_credentials: Annotated[UserCredentials, Depends(get_current_user_credentials)],
     relationship_type: Annotated[
@@ -52,26 +54,41 @@ async def get_relationships(
 
 
 @router.put("/", status_code=HTTP_201_CREATED)
-async def establish_relationship(
+async def send_friend_request(
     response: Response,
-    relationship_payload: CreateRelationshipInputSchema,
+    friend_request_payload: FriendRequestPayload,
     relationship_service: Annotated[
-        RelationshipService, Depends(DependencyStub("contact_service"))
+        RelationshipService, Depends(DependencyStub("relationship_service"))
     ],
     user_credentials: Annotated[UserCredentials, Depends(get_current_user_credentials)],
 ):
-    await relationship_service.establish_relationship(
-        username=relationship_payload.username, initiator_email=user_credentials.email
+    await relationship_service.create_friend_request(
+        username=friend_request_payload.username, initiator_email=user_credentials.email
     )
+
     response.status_code = HTTP_201_CREATED
     return
+
+
+@router.post("/update", status_code=status.HTTP_204_NO_CONTENT)
+async def update_relationship_status(
+    update_relationship_status_payload: UpdateRelationshipStatusPayload,
+    relationship_service: Annotated[
+        RelationshipService, Depends(DependencyStub("relationship_service"))
+    ],
+    user_credentials: Annotated[UserCredentials, Depends(get_current_user_credentials)],
+):
+    await relationship_service.update_relationship_status(
+        update_relationship_status_payload,
+        user_credentials.email,
+    )
 
 
 @router.post("/block", status_code=HTTP_200_OK)
 async def block_user(
     block_user_payload: BlockUserSchema,
     relationship_service: Annotated[
-        RelationshipService, Depends(DependencyStub("contact_service"))
+        RelationshipService, Depends(DependencyStub("relationship_service"))
     ],
     user_credentials: Annotated[UserCredentials, Depends(get_current_user_credentials)],
 ):

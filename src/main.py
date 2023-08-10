@@ -40,7 +40,7 @@ from src.services.conversation_service import ConversationService
 from src.services.relationship_service import RelationshipService
 from src.services.user_service import UserService
 from src.utils.custom_logging import setup_logging
-from src.utils.socketio_utils import IdempotentSocketIOAsyncClient
+from src.utils.socketio_utils import SocketIOManager
 from src.utils.stub import DependencyStub
 from src.utils.stub import SingletonDependency
 
@@ -50,8 +50,8 @@ logger: structlog.stdlib.BoundLogger = structlog.get_logger(__name__)
 
 def create_app() -> FastAPI:
     mongodb_client = AsyncIOMotorClient(str(app_config.db_url))
-    socketio_client = IdempotentSocketIOAsyncClient(
-        logger=app_config.debug, engineio_logger=app_config.debug
+    socketio_manager = SocketIOManager(
+        socketio.AsyncRedisManager(str(app_config.redis_dsn), write_only=True)
     )
     boto3_session = aioboto3.Session(
         aws_access_key_id=app_config.s3_access_key,
@@ -89,11 +89,12 @@ def create_app() -> FastAPI:
         DependencyStub("user_service"): lambda: UserService(
             mongodb_client, boto3_session
         ),
-        DependencyStub("contact_service"): lambda: RelationshipService(mongodb_client),
+        DependencyStub("relationship_service"): lambda: RelationshipService(
+            mongodb_client, socketio_manager
+        ),
         DependencyStub("conversation_service"): lambda: ConversationService(
             mongodb_client
         ),
-        DependencyStub("socketio_client"): SingletonDependency(socketio_client),
         DependencyStub("boto3_session"): SingletonDependency(boto3_session),
     }
 
@@ -188,10 +189,6 @@ async def lifespan(application: FastAPI, mongodb_client: AsyncIOMotorClient):
         sys.exit(1)
     logger.info("Successfully connected to MongoDB and initialized beanie")
     yield
-    socketio_client: socketio.AsyncClient = application.dependency_overrides[
-        DependencyStub("socketio_client")
-    ]()
-    await socketio_client.disconnect()
 
 
 app = create_app()

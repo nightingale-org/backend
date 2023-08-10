@@ -58,15 +58,14 @@ async def connect(request: Request, sid: str) -> bool | NoReturn:
     async with socketio_server.session(sid) as session:
         session["user_credentials"] = user_credentials
 
-    # TODO: It might be better to get this mapping from the socketio.AsyncServer instance itself
-    #     instead of storing it in a global variable
-    _EMAIL_TO_SID_USERS_MAP[user_credentials.email] = sid
+    await client_manager.redis.set(f"socketio:email:sid:{user_credentials.email}", sid)
 
 
 @socketio_server.event
 async def disconnect(sid: str):
     async with socketio_server.session(sid) as session:
-        _EMAIL_TO_SID_USERS_MAP.pop(session["user_credentials"].email)
+        email = session["user_credentials"].email
+        await client_manager.redis.delete(f"socketio:email:sid:{email}")
 
 
 @socketio_server.on("conversations:new")
