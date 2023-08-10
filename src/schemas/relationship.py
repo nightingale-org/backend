@@ -31,8 +31,15 @@ class RelationshipListItemSchema(BaseModel):
     @field_validator("type", mode="before")
     @classmethod
     def validate_type(
-        cls, v: Literal["ingoing"] | Literal["outgoing"] | RelationshipType
+        cls,
+        v: Literal["ingoing"]
+        | Literal["outgoing"]
+        | RelationshipType
+        | RelationshipTypeExpanded,
     ):
+        if isinstance(v, RelationshipTypeExpanded):
+            return v
+
         if v == "ingoing":
             return RelationshipTypeExpanded.ingoing_request
         elif v == "outgoing":
@@ -45,9 +52,14 @@ class RelationshipListItemSchema(BaseModel):
         raise ValueError(f"Invalid relationship type {v}")
 
 
-class CreateRelationshipInputSchema(BaseModel):
+class FriendRequestPayload(BaseModel):
     username: str
 
 
 class BlockUserSchema(BaseModel):
     user_id: str
+
+
+class UpdateRelationshipStatusPayload(BaseModel):
+    new_state: Literal["accepted", "ignored"]
+    relationship_id: PydanticObjectId
