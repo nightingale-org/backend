@@ -1933,6 +1933,17 @@ pygments = ">=2.13.0,<3.0.0"
 jupyter = ["ipywidgets (>=7.5.1,<9)"]
 
 [[package]]
+name = "rodi"
+version = "2.0.2"
+description = "Implementation of dependency injection for Python 3"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "rodi-2.0.2-py3-none-any.whl", hash = "sha256:e24e792cfdd088e365dca27ee50b145650f4c91f21a91bc94963979f307aafeb"},
+    {file = "rodi-2.0.2.tar.gz", hash = "sha256:738978d04b2ceec853b8b0b7c56dc99ec35166cfe1a4a046684827a0e2ed25d7"},
+]
+
+[[package]]
 name = "ruff"
 version = "0.0.265"
 description = "An extremely fast Python linter, written in Rust."
@@ -3239,4 +3250,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "cfba9ba8249cac0c7eae78b3c951f7dc7dd6c271f4a2386b3b121b9b49abf132"
+content-hash = "edd55dce549ef1702e95de7b82021a9689fc988ae7fbc2041a610c7868e38500"

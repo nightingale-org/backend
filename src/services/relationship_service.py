@@ -16,9 +16,10 @@ from src.exceptions import BusinessLogicError
 from src.schemas.relationship import RelationshipListItemSchema
 from src.schemas.relationship import RelationshipTypeExpanded
 from src.schemas.relationship import UpdateRelationshipStatusPayload
+from src.schemas.websockets.relationships import RelationshipDeletePayload
 from src.services.base_service import BaseService
 from src.utils.orm_utils import get_collection_name_from_model
-from src.utils.socketio_utils import SocketIOManager
+from src.utils.socketio.socket_manager import SocketIOManager
 
 
 class RelationshipService(BaseService):
@@ -163,7 +164,7 @@ class RelationshipService(BaseService):
                         target=initiator,
                         type=RelationshipTypeExpanded.ingoing_request,
                     ),
-                    raise_on_not_connected=False,
+                    raise_if_recipient_not_connected=False,
                 ),
                 self._socketio_manager.emit_to_user_by_email(
                     email=initiator_email,
@@ -173,7 +174,7 @@ class RelationshipService(BaseService):
                         target=target_user,
                         type=RelationshipTypeExpanded.outgoing_request,
                     ),
-                    raise_on_not_connected=False,
+                    raise_if_recipient_not_connected=False,
                 ),
             ]
         )
@@ -181,30 +182,40 @@ class RelationshipService(BaseService):
         return new_relationship
 
     async def update_relationship_status(
-        self, payload: UpdateRelationshipStatusPayload, initiator_email: str
+        self,
+        payload: UpdateRelationshipStatusPayload,
     ):
-        initiator = await User.find_one(
-            User.email == initiator_email, session=self._current_session
+        # TODO: optimize these queries
+        relationship = await Relationship.find_one(
+            Relationship.id == payload.relationship_id,
+            session=self._current_session,
         )
-        if initiator is None:
-            raise BusinessLogicError(
-                "Internal error, user who made a request not found",
-                "requester_not_found",
-            )
+        initiator = await User.get(relationship.initiator_user_id)
 
         if payload.new_state == "accepted":
-            return await Relationship.find_one(
-                Relationship.id == payload.relationship_id,
-                session=self._current_session,
-            ).update(
+            await relationship.update(
                 Set({Relationship.type: RelationshipType.settled}),
                 session=self._current_session,
             )
+            await self._socketio_manager.emit_to_user_by_email(
+                initiator.email,
+                "relationship:delete",
+                RelationshipDeletePayload(
+                    type=RelationshipType.pending, relationship_id=relationship.id
+                ),
+            )
+            return
 
-        await Relationship.find_one(
-            Relationship.id == payload.relationship_id,
-            session=self._current_session,
-        ).delete(session=self._current_session)
+        await relationship.delete(session=self._current_session)
+        await self._socketio_manager.emit_to_user_by_email(
+            initiator.email,
+            "relationship:request_rejected",
+            payload={
+                "relationship_id": str(relationship.id),
+                "type": relationship.type,
+            },
+            raise_if_recipient_not_connected=False,
+        )
 
     async def block_user(self, *, initiator_user_id: str, partner_user_id: str) -> None:
         await Relationship.find_one(

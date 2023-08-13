@@ -76,11 +76,9 @@ async def update_relationship_status(
     relationship_service: Annotated[
         RelationshipService, Depends(DependencyStub("relationship_service"))
     ],
-    user_credentials: Annotated[UserCredentials, Depends(get_current_user_credentials)],
 ):
     await relationship_service.update_relationship_status(
         update_relationship_status_payload,
-        user_credentials.email,
     )
 
 

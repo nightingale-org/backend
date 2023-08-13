@@ -9,6 +9,7 @@ import pymongo
 from beanie import Document
 from beanie import Link
 from beanie import PydanticObjectId
+from pydantic import PositiveInt
 from pymongo import IndexModel
 
 
@@ -20,6 +21,25 @@ class RelationshipType(enum.IntEnum):
     pending = enum.auto()
     blocked = enum.auto()
     settled = enum.auto()
+
+
+class RelationshipStats(Document):
+    user_id: PydanticObjectId
+    relationship_type: RelationshipType
+    unseen_count: PositiveInt = 0
+
+    class Settings:
+        name = "relationship_notification_stats"
+        use_state_management = True
+        indexes = [
+            IndexModel(
+                [
+                    ("user_id", pymongo.ASCENDING),
+                    ("relationship_type", pymongo.ASCENDING),
+                ],
+                unique=True,
+            ),
+        ]
 
 
 class Relationship(Document):

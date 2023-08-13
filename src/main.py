@@ -23,6 +23,8 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import ORJSONResponse
 from motor.motor_asyncio import AsyncIOMotorClient
+from rodi import Container
+from rodi import Services
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_400_BAD_REQUEST
@@ -31,16 +33,18 @@ from starlette_context import request_cycle_context
 from starlette_context.middleware import RawContextMiddleware
 
 from src.api.v1 import create_root_router
-from src.api.websockets import socketio_app
+from src.api.websockets.server import asgi_app
+from src.api.websockets.server import socketio_server
 from src.config import app_config
 from src.db.models import gather_documents
 from src.exceptions import BusinessLogicError
 from src.middlewares.logging_middleware import logging_middleware
 from src.services.conversation_service import ConversationService
 from src.services.relationship_service import RelationshipService
+from src.services.relationship_stats_service import RelationshipStatsService
 from src.services.user_service import UserService
 from src.utils.custom_logging import setup_logging
-from src.utils.socketio_utils import SocketIOManager
+from src.utils.socketio.socket_manager import SocketIOManager
 from src.utils.stub import DependencyStub
 from src.utils.stub import SingletonDependency
 
@@ -77,7 +81,15 @@ def create_app() -> FastAPI:
     )
     _setup_middlewares(app)
 
-    app.mount("/ws", app=socketio_app, name="socketio")
+    # Setup dependency injection using third-party library for SocketIO
+    # since it doesn't support it out of the box and
+    # one can't really use FastAPI's dependency injection system for it
+    container = Container()
+    container.add_instance(RelationshipStatsService(mongodb_client))
+    container.add_instance(UserService(mongodb_client, boto3_session))
+    provider = container.build_provider()
+    _mount_websocket_app(app, provider)
+
     app.include_router(create_root_router())
 
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
@@ -99,6 +111,14 @@ def create_app() -> FastAPI:
     }
 
     return app
+
+
+def _mount_websocket_app(app: FastAPI, services: Services):
+    # TODO: Find a better way of doing it through an instance variable
+    # TODO: It might cause a memory leak later on!!!
+    # For now, this is how the most basic dependency injection is implemented in SocketIO
+    socketio_server.services = services
+    app.mount("/ws", app=asgi_app, name="socketio")
 
 
 def _setup_middlewares(app: FastAPI) -> None:
