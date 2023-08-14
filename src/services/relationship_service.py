@@ -227,3 +227,57 @@ class RelationshipService(BaseService):
             Set({Relationship.type: RelationshipType.blocked}),
             session=self._current_session,
         )
+
+    async def delete_friend(
+        self, *, relationship_id: PydanticObjectId, user_email: str
+    ) -> None:
+        relationship = await Relationship.aggregate(
+            [
+                {
+                    "$match": {
+                        "_id": relationship_id,
+                    }
+                },
+                {
+                    "$lookup": {
+                        "from": get_collection_name_from_model(User),
+                        "localField": "initiator_user_id",
+                        "foreignField": "_id",
+                        "as": "initiator",
+                    },
+                },
+                {
+                    "$lookup": {
+                        "from": get_collection_name_from_model(User),
+                        "localField": "target.$id",
+                        "foreignField": "_id",
+                        "as": "target",
+                    }
+                },
+                {
+                    "$unwind": "$initiator",
+                },
+                {
+                    "$unwind": "$target",
+                },
+                {
+                    "$match": {
+                        "$or": [
+                            {"initiator.email": user_email},
+                            {"target.email": user_email},
+                        ]
+                    }
+                },
+                {"$project": {"_id": 1}},
+            ]
+        ).to_list()
+
+        if not relationship:
+            raise BusinessLogicError(
+                "You can't delete a relationship that you are not a part of.",
+                "prohibited_operation",
+            )
+
+        await Relationship.find_one(
+            Relationship.id == relationship_id,
+        ).delete(session=self._current_session)

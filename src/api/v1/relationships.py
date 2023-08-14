@@ -12,6 +12,7 @@ from starlette.status import HTTP_201_CREATED
 
 from src.db.models.relationship import RelationshipType
 from src.schemas.relationship import BlockUserSchema
+from src.schemas.relationship import DeleteFriendPayload
 from src.schemas.relationship import FriendRequestPayload
 from src.schemas.relationship import RelationshipListItemSchema
 from src.schemas.relationship import UpdateRelationshipStatusPayload
@@ -94,4 +95,17 @@ async def block_user(
         initiator_user_id=user_credentials.email,
         partner_user_id=block_user_payload.user_id,
     )
-    return Response(status_code=HTTP_200_OK)
+
+
+@router.delete("/")
+async def delete_a_friend(
+    delete_friend_payload: DeleteFriendPayload,
+    relationship_service: Annotated[
+        RelationshipService, Depends(DependencyStub("relationship_service"))
+    ],
+    user_credentials: Annotated[UserCredentials, Depends(get_current_user_credentials)],
+):
+    await relationship_service.delete_friend(
+        relationship_id=delete_friend_payload.relationship_id,
+        user_email=user_credentials.email,
+    )

@@ -63,3 +63,7 @@ class BlockUserSchema(BaseModel):
 class UpdateRelationshipStatusPayload(BaseModel):
     new_state: Literal["accepted", "ignored"]
     relationship_id: PydanticObjectId
+
+
+class DeleteFriendPayload(BaseModel):
+    relationship_id: PydanticObjectId
