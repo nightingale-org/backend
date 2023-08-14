@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 from typing import Annotated
 
 import aioboto3
+import redis.exceptions
 import socketio
 import structlog
 import uvicorn
@@ -23,6 +24,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import ORJSONResponse
 from motor.motor_asyncio import AsyncIOMotorClient
+from redis.asyncio.client import Redis
 from rodi import Container
 from rodi import Services
 from starlette.middleware.cors import CORSMiddleware
@@ -191,6 +193,19 @@ async def transform_business_logic_exception_handler(
 
 @asynccontextmanager
 async def lifespan(application: FastAPI, mongodb_client: AsyncIOMotorClient):
+    logger.info("Trying to connect to Redis and check if it's alive...")
+    redis_instance = Redis.from_url(
+        str(app_config.redis_dsn), socket_keepalive=True, socket_timeout=300
+    )
+    try:
+        await redis_instance.ping()
+    except redis.exceptions.ConnectionError:
+        logger.error(
+            "Failed to connect to Redis. Check credentials of redis and is the redis instance running. Exiting application..."
+        )
+        sys.exit(1)
+    logger.info("Successfully connected to Redis.")
+
     logger.info("Trying to init beanie and connect to MongoDB...")
     try:
         async with asyncio.timeout(5):
