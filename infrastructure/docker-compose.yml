@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: always
+    configs:
+      - source: redis_config
+        target: /redis_config
+    volumes:
+      - redis_data:/data
+
+configs:
+  redis_config:
+    file: ./redis.conf
+
+volumes:
+  redis_data:
