@@ -2039,13 +2039,13 @@ jupyter = ["ipywidgets (>=7.5.1,<9)"]
 
 [[package]]
 name = "rodi"
-version = "2.0.2"
+version = "2.0.3"
 description = "Implementation of dependency injection for Python 3"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "rodi-2.0.2-py3-none-any.whl", hash = "sha256:e24e792cfdd088e365dca27ee50b145650f4c91f21a91bc94963979f307aafeb"},
-    {file = "rodi-2.0.2.tar.gz", hash = "sha256:738978d04b2ceec853b8b0b7c56dc99ec35166cfe1a4a046684827a0e2ed25d7"},
+    {file = "rodi-2.0.3-py3-none-any.whl", hash = "sha256:cd0f3c03540cde58c6858eb80959e00f7dd2f2e48c175ccaefd30126e84cdc12"},
+    {file = "rodi-2.0.3.tar.gz", hash = "sha256:0481a87e8152d9ec835203e22f8fccf3df0d4938cfe72d634767f4cdb4fb9f0a"},
 ]
 
 [[package]]
@@ -3355,4 +3355,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "213c08578f2b533096c789941463899cf2f50b66d5809e6827da935f74405992"
+content-hash = "0b08648260c2676783c3805658424e049f79967256f955ab72cd12e5a5ee95f5"
