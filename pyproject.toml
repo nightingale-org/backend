@@ -7,7 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = "^0.101.0"
+fastapi = "^0.101.1"
 uvicorn = { version = "^0.23.2", extras = ["standard"] }
 python-dateutil = "^2.8.2"
 python-dotenv = "^1.0.0"
@@ -27,11 +27,11 @@ ddtrace = "^1.15.0"
 aioboto3 = "^11.2.0"
 python-socketio = "^5.8.0"
 types-aioboto3 = "^11.2.0"
-redis = { version = "^4.5.5", extras = ["hiredis"]}
+redis = { version = "^5.0.0", extras = ["hiredis"]}
 pydantic-settings = "^2.0.2"
 typing-extensions = "^4.7.1"
 python-multipart = "^0.0.6"
-rodi = "^2.0.2"
+rodi = "^2.0.3"
 
 
 [tool.poetry.group.dev.dependencies]
