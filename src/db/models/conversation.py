@@ -35,22 +35,16 @@ class Message(Document):
 
 class Conversation(Document):
     created_at: AwareDatetime = Field(default_factory=current_timeaware_utc_datetime)
-    last_message_at: AwareDatetime | None = Field(
-        default_factory=current_timeaware_utc_datetime
-    )
     name: str | None = None
-    is_group: bool
     user_limit: Annotated[int, Field(ge=2, strict=True)] | None = None
+
+    @property
+    def is_group(self) -> bool:
+        return len(self.members) > 2
 
     @model_validator(mode="after")
     def validate_members(self):
-        if not self.is_group:
-            # is_group field is not set, so we can't validate members. It will raise a ValidationError later anyway.
-            return self
-
         members = self.members
-        if len(members) > 2 and not self.is_group:
-            raise ValueError("is_group must be True for group conversations.")
 
         if len(members) <= 1:
             raise ValueError(
@@ -74,7 +68,7 @@ class Conversation(Document):
         return v
 
     messages: list[Link[Message]] = Field(default_factory=list)
-    members: list[Link[User]] = Field(default_factory=list)
+    members: list[Link[User]]
 
     class Settings:
         name = "conversations"
