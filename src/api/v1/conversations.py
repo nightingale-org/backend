@@ -5,12 +5,18 @@ from typing import Annotated
 from beanie import PydanticObjectId
 from fastapi import APIRouter
 from fastapi import Depends
+from fastapi import Query
+from pydantic import PositiveInt
 
+from src.schemas.conversations import ConversationPreviewSchema
+from src.schemas.conversations import ConversationPreviewSchemaCursorPayload
 from src.schemas.conversations import CreateConversationSchema
+from src.schemas.pagination import PaginatedResponse
 from src.services.conversation_service import ConversationService
 from src.utils.auth import UserCredentials
 from src.utils.auth import get_current_user_credentials
 from src.utils.auth import validate_jwt_token
+from src.utils.pagination import pagination
 from src.utils.stub import DependencyStub
 
 
@@ -21,14 +27,33 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model_by_alias=True)
-async def get_conversations(
+@router.get(
+    "/",
+    response_model_by_alias=False,
+    response_model=PaginatedResponse[ConversationPreviewSchema],
+)
+async def get_conversation_previews(
     conversation_service: Annotated[
         ConversationService, Depends(DependencyStub("conversation_service"))
     ],
     user_credentials: Annotated[UserCredentials, Depends(get_current_user_credentials)],
+    limit: Annotated[PositiveInt, Query(le=50, ge=10)] = 10,
+    next_cursor_payload: Annotated[
+        ConversationPreviewSchemaCursorPayload | None,
+        Depends(
+            pagination(
+                ConversationPreviewSchemaCursorPayload, "conversation", default=None
+            )
+        ),
+    ] = None,
 ):
-    return await conversation_service.get_all_conversations(user_credentials.email)
+    paginated_result = await conversation_service.get_conversation_previews(
+        user_credentials.email, limit=limit, cursor_payload=next_cursor_payload
+    )
+
+    return PaginatedResponse[ConversationPreviewSchema].from_paginated_result(
+        paginated_result
+    )
 
 
 @router.put("/", response_model_by_alias=True)

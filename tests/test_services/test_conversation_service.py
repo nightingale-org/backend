@@ -99,7 +99,9 @@ async def test_get_all_conversations(conversation_service, faker: Faker):
         members=[user2, user3], is_group=False
     )
 
-    conversations = await conversation_service.get_all_conversations(email=user1.email)
+    conversations = await conversation_service.get_conversation_previews(
+        email=user1.email
+    )
 
     assert len(conversations) == 2
     assert conversation1.id in (x.id for x in conversations)

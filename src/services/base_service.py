@@ -2,12 +2,32 @@ from __future__ import annotations
 
 from contextlib import AbstractAsyncContextManager
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
+from typing import Any
+from typing import Generic
+from typing import TypeVar
 
 from motor.motor_asyncio import AsyncIOMotorClient
 from motor.motor_asyncio import AsyncIOMotorClientSession
 from pymongo import ReadPreference
 from pymongo import WriteConcern
 from pymongo.read_concern import ReadConcern
+
+
+_T = TypeVar("_T")
+
+
+@dataclass(slots=True)
+class CursorMetadata:
+    entity_name: str
+    cursor_values: dict[str, Any]
+
+
+@dataclass(slots=True)
+class PaginatedResult(Generic[_T]):
+    data: list[_T]
+    has_more: bool
+    next_cursor_metadata: CursorMetadata | None = None
 
 
 class BaseService:

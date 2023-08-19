@@ -8,7 +8,6 @@ from typing import Literal
 
 from pydantic import Field
 from pydantic import model_validator
-from pydantic.networks import MongoDsn
 from pydantic.networks import RedisDsn
 from pydantic_settings import BaseSettings
 from pydantic_settings import SettingsConfigDict
@@ -27,7 +26,7 @@ class AppConfig(BaseSettings):
         env_file=(ENV_EXAMPLE_FILE_PATH, ENV_PROD_FILE_PATH), env_file_encoding="utf-8"
     )
 
-    db_url: MongoDsn = Field(validation_alias="DATABASE_URL")
+    db_url: str = Field(validation_alias="DATABASE_URL")
     database_name: str = Field(validation_alias="DATABASE_NAME")
 
     redis_dsn: RedisDsn = Field(validation_alias="REDIS_DSN")
