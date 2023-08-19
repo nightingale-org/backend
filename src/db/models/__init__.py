@@ -11,6 +11,7 @@ from src.db.models.user import User
 
 
 Relationship.model_rebuild()
+Conversation.model_rebuild()
 
 
 def gather_documents() -> list[type[Document]]:

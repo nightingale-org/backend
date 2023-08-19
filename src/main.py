@@ -55,7 +55,7 @@ logger: structlog.stdlib.BoundLogger = structlog.get_logger(__name__)
 
 
 def create_app() -> FastAPI:
-    mongodb_client = AsyncIOMotorClient(str(app_config.db_url))
+    mongodb_client = AsyncIOMotorClient(app_config.db_url)
     socketio_manager = SocketIOManager(
         socketio.AsyncRedisManager(str(app_config.redis_dsn), write_only=True)
     )

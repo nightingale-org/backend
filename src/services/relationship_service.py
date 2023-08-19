@@ -9,6 +9,7 @@ from beanie.odm.operators.update.general import Set
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import DuplicateKeyError
 
+from src.db.models import Conversation
 from src.db.models import User
 from src.db.models.relationship import Relationship
 from src.db.models.relationship import RelationshipType
@@ -189,14 +190,23 @@ class RelationshipService(BaseService):
         relationship = await Relationship.find_one(
             Relationship.id == payload.relationship_id,
             session=self._current_session,
+            fetch_links=True,
         )
         initiator = await User.get(relationship.initiator_user_id)
 
         if payload.new_state == "accepted":
-            await relationship.update(
-                Set({Relationship.type: RelationshipType.settled}),
-                session=self._current_session,
-            )
+            async with self.transaction():
+                await relationship.update(
+                    Set({Relationship.type: RelationshipType.settled}),
+                    session=self._current_session,
+                )
+
+                # TODO: move to a different service
+                await Conversation(
+                    members=[initiator, relationship.target],
+                    is_group=False,
+                ).create(session=self._current_session)
+
             await self._socketio_manager.emit_to_user_by_email(
                 initiator.email,
                 "relationship:delete",

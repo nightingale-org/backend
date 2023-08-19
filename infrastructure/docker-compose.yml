@@ -10,7 +10,7 @@ services:
       - source: redis_config
         target: /redis_config
     volumes:
-      - redis_data:/data
+      - redis_data:/data:wr
 
 configs:
   redis_config:
