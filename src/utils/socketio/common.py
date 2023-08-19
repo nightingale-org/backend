@@ -46,10 +46,10 @@ def validate_data(
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
             data = args[1]
             try:
-                if isinstance(data, str | bytes):
-                    parsed_data = pydantic_model.parse_raw(data)
+                if isinstance(data, str | bytes | bytearray):
+                    parsed_data = pydantic_model.model_validate_json(data)
                 elif isinstance(data, dict):
-                    parsed_data = pydantic_model.parse_obj(data)
+                    parsed_data = pydantic_model.model_validate(data)
                 else:
                     raise ValueError(
                         f"Data must be either a string, bytes or dict, got {type(data)}"
