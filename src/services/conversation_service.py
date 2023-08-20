@@ -29,14 +29,14 @@ class ConversationService(BaseService):
         )
         limit_plus_one_entry_to_check_if_has_more = limit + 1
 
-        extra_aggregation_steps: list[dict[str, Any]] = []
+        pagination_cond_aggregation_steps: list[dict[str, Any]] = []
 
         if (
             cursor_payload
             and cursor_payload.last_created_at
             and cursor_payload.last_message_created_at
         ):
-            extra_aggregation_steps.append(
+            pagination_cond_aggregation_steps.append(
                 {
                     "$match": {
                         "$or": [
@@ -60,97 +60,14 @@ class ConversationService(BaseService):
                 }
             )
         elif cursor_payload and cursor_payload.last_created_at:
-            extra_aggregation_steps.append(
+            pagination_cond_aggregation_steps.append(
                 {"$match": {"created_at": {"$lt": cursor_payload.last_created_at}}}
             )
 
         result = await Conversation.aggregate(
             [
-                {
-                    "$lookup": {
-                        "from": get_collection_name_from_model(User),
-                        "localField": "members.$id",
-                        "foreignField": "_id",
-                        "as": "members",
-                    }
-                },
-                {"$match": {"members._id": user.id}},
-                {
-                    "$project": {
-                        "created_at": 1,
-                        "name": {
-                            "$cond": {
-                                "if": {"$eq": ["$is_group", False]},
-                                "then": {
-                                    "$cond": {
-                                        "if": {
-                                            "$eq": [
-                                                {"$arrayElemAt": ["$members._id", 0]},
-                                                user.id,
-                                            ],
-                                        },
-                                        "then": {
-                                            "$arrayElemAt": ["$members.username", 1]
-                                        },
-                                        "else": {
-                                            "$arrayElemAt": ["$members.username", 0]
-                                        },
-                                    }
-                                },
-                                "else": "$name",
-                            }
-                        },
-                        "user_limit": 1,
-                        "last_message": {
-                            "$ifNull": [{"$arrayElemAt": ["$messages", -1]}, None]
-                        },
-                        "last_message_seen": {
-                            "$cond": {
-                                "if": {
-                                    "$eq": ["$last_message", None],
-                                },
-                                "then": True,
-                                "else": {
-                                    "$cond": {
-                                        "if": {
-                                            "$in": [
-                                                user.id,
-                                                {
-                                                    "$ifNull": [
-                                                        "$last_message.seen_by.$id",
-                                                        [],
-                                                    ]
-                                                },
-                                            ],
-                                        },
-                                        "then": True,
-                                        "else": False,
-                                    }
-                                },
-                            }
-                        },
-                        "is_group": 1,
-                        "avatar_url": {
-                            "$cond": {
-                                "if": {"$eq": ["$is_group", False]},
-                                "then": {
-                                    "$cond": {
-                                        "if": {
-                                            "$eq": [
-                                                {"$arrayElemAt": ["$members._id", 0]},
-                                                user.id,
-                                            ],
-                                        },
-                                        "then": {"$arrayElemAt": ["$members.image", 1]},
-                                        "else": {"$arrayElemAt": ["$members.image", 0]},
-                                    }
-                                },
-                                "else": "$avatar_url",
-                            }
-                        },
-                    }
-                },
-                *extra_aggregation_steps,
+                *_generate_conversation_preview_aggregation_steps(user.id),
+                *pagination_cond_aggregation_steps,
                 {
                     "$sort": {
                         "last_message.created_at": pymongo.DESCENDING,
@@ -183,6 +100,24 @@ class ConversationService(BaseService):
             )
 
         return PaginatedResult(result, has_more=False)
+
+    async def get_conversation_preview_by_id(
+        self, conversation_id: PydanticObjectId, user_email: str
+    ):
+        user: User = await User.find_one(
+            User.email == user_email, session=self._current_session
+        )
+
+        try:
+            return (
+                await Conversation.aggregate(
+                    _generate_conversation_preview_aggregation_steps(
+                        user.id, conversation_id
+                    )
+                ).to_list()
+            )[0]
+        except KeyError:
+            return None
 
     async def create_conversation(
         self, create_input: CreateConversationSchema
@@ -232,9 +167,93 @@ class ConversationService(BaseService):
         await conversation.create(session=self._current_session)
         return conversation
 
-    async def get_conversation(
-        self, conversation_id: str | PydanticObjectId
-    ) -> Conversation:
-        return await Conversation.get(
-            conversation_id, fetch_links=True, session=self._current_session
-        )
+
+def _generate_conversation_preview_aggregation_steps(
+    user_id: PydanticObjectId, conversation_id: PydanticObjectId | None = None
+):
+    match_expression = (
+        {"members._id": user_id} if not conversation_id else {"_id": conversation_id}
+    )
+
+    return [
+        {
+            "$lookup": {
+                "from": get_collection_name_from_model(User),
+                "localField": "members.$id",
+                "foreignField": "_id",
+                "as": "members",
+            }
+        },
+        {"$match": match_expression},
+        {
+            "$project": {
+                "created_at": 1,
+                "name": {
+                    "$cond": {
+                        "if": {"$eq": ["$is_group", False]},
+                        "then": {
+                            "$cond": {
+                                "if": {
+                                    "$eq": [
+                                        {"$arrayElemAt": ["$members._id", 0]},
+                                        user_id,
+                                    ],
+                                },
+                                "then": {"$arrayElemAt": ["$members.username", 1]},
+                                "else": {"$arrayElemAt": ["$members.username", 0]},
+                            }
+                        },
+                        "else": "$name",
+                    }
+                },
+                "user_limit": 1,
+                "last_message": {
+                    "$ifNull": [{"$arrayElemAt": ["$messages", -1]}, None]
+                },
+                "last_message_seen": {
+                    "$cond": {
+                        "if": {
+                            "$eq": ["$last_message", None],
+                        },
+                        "then": True,
+                        "else": {
+                            "$cond": {
+                                "if": {
+                                    "$in": [
+                                        user_id,
+                                        {
+                                            "$ifNull": [
+                                                "$last_message.seen_by.$id",
+                                                [],
+                                            ]
+                                        },
+                                    ],
+                                },
+                                "then": True,
+                                "else": False,
+                            }
+                        },
+                    }
+                },
+                "is_group": 1,
+                "avatar_url": {
+                    "$cond": {
+                        "if": {"$eq": ["$is_group", False]},
+                        "then": {
+                            "$cond": {
+                                "if": {
+                                    "$eq": [
+                                        {"$arrayElemAt": ["$members._id", 0]},
+                                        user_id,
+                                    ],
+                                },
+                                "then": {"$arrayElemAt": ["$members.image", 1]},
+                                "else": {"$arrayElemAt": ["$members.image", 0]},
+                            }
+                        },
+                        "else": "$avatar_url",
+                    }
+                },
+            }
+        },
+    ]

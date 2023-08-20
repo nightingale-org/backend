@@ -5,8 +5,10 @@ from typing import Annotated
 from beanie import PydanticObjectId
 from fastapi import APIRouter
 from fastapi import Depends
+from fastapi import HTTPException
 from fastapi import Query
 from pydantic import PositiveInt
+from starlette.status import HTTP_404_NOT_FOUND
 
 from src.schemas.conversations import ConversationPreviewSchema
 from src.schemas.conversations import ConversationPreviewSchemaCursorPayload
@@ -67,11 +69,24 @@ async def create_conversation(
     return conversation
 
 
-@router.get("/{conversation_id}", response_model_by_alias=True)
-async def get_conversation_by_id(
+@router.get(
+    "/{conversation_id}",
+    response_model_by_alias=False,
+    response_model=ConversationPreviewSchema,
+)
+async def get_conversation_preview_by_id(
     conversation_id: PydanticObjectId,
     conversation_service: Annotated[
         ConversationService, Depends(DependencyStub("conversation_service"))
     ],
+    user_credentials: Annotated[UserCredentials, Depends(get_current_user_credentials)],
 ):
-    return await conversation_service.get_conversation(conversation_id)
+    conversation_preview = await conversation_service.get_conversation_preview_by_id(
+        conversation_id, user_credentials.email
+    )
+    if conversation_preview is None:
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND, detail="Conversation not found"
+        )
+
+    return conversation_preview
