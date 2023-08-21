@@ -24,7 +24,7 @@ aiohttp = "^3.8.4"
 ddtrace = "^1.15.0"
 aioboto3 = "^11.2.0"
 python-socketio = "^5.8.0"
-types-aioboto3 = "^11.2.0"
+types-aioboto3 = "^11.3.0"
 redis = { version = "^5.0.0", extras = ["hiredis"]}
 pydantic-settings = "^2.0.2"
 typing-extensions = "^4.7.1"
