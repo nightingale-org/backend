@@ -53,6 +53,8 @@ class RelationshipService(BaseService):
                 },
             }
 
+        user = await User.find_one(User.email == email, session=self._current_session)
+
         return (
             await Relationship.find(Relationship.type == relationship_type)
             .aggregate(
@@ -97,12 +99,46 @@ class RelationshipService(BaseService):
                         }
                     },
                     {
+                        "$lookup": {
+                            "from": get_collection_name_from_model(Conversation),
+                            "let": {"target_user_id": "$target._id"},
+                            "pipeline": [
+                                {
+                                    "$match": {
+                                        "$expr": {
+                                            "$and": [
+                                                {"$in": [user.id, "$members.$id"]},
+                                                {
+                                                    "$in": [
+                                                        "$$target_user_id",
+                                                        "$members.$id",
+                                                    ]
+                                                },
+                                            ]
+                                        }
+                                    }
+                                },
+                                {"$project": {"_id": 1}},
+                            ],
+                            "as": "conversations",
+                        }
+                    },
+                    {
                         "$limit": limit,
                     },
                     {
                         "$project": {
                             "target": 1,
                             "type": 1,
+                            "created_at": 1,
+                            "conversations": 1,
+                            "conversation_id": {
+                                "$cond": {
+                                    "if": {"$eq": ["$type", RelationshipType.settled]},
+                                    "then": {"$arrayElemAt": ["$conversations._id", 0]},
+                                    "else": None,
+                                }
+                            },
                         }
                     },
                 ],
@@ -207,6 +243,7 @@ class RelationshipService(BaseService):
                     is_group=False,
                 ).create(session=self._current_session)
 
+            # TODO: plus add relationship to all tab on the other's user side
             await self._socketio_manager.emit_to_user_by_email(
                 initiator.email,
                 "relationship:delete",
@@ -241,6 +278,15 @@ class RelationshipService(BaseService):
     async def delete_friend(
         self, *, relationship_id: PydanticObjectId, user_email: str
     ) -> None:
+        user = await User.find_one(
+            User.email == user_email, session=self._current_session
+        )
+        if not user:
+            raise BusinessLogicError(
+                "You can't delete a relationship that you are not a part of.",
+                "prohibited_operation",
+            )
+
         relationship = await Relationship.aggregate(
             [
                 {
@@ -265,6 +311,31 @@ class RelationshipService(BaseService):
                     }
                 },
                 {
+                    "$lookup": {
+                        "from": get_collection_name_from_model(Conversation),
+                        "let": {"target_user_id": "$target._id"},
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": {
+                                        "$and": [
+                                            {"$in": [user.id, "$members.$id"]},
+                                            {
+                                                "$in": [
+                                                    "$$target_user_id",
+                                                    "$members.$id",
+                                                ]
+                                            },
+                                        ]
+                                    }
+                                }
+                            },
+                            {"$project": {"_id": 1}},
+                        ],
+                        "as": "conversations",
+                    }
+                },
+                {
                     "$unwind": "$initiator",
                 },
                 {
@@ -278,7 +349,18 @@ class RelationshipService(BaseService):
                         ]
                     }
                 },
-                {"$project": {"_id": 1}},
+                {
+                    "$project": {
+                        "_id": 1,
+                        "conversation_id": {
+                            "$cond": {
+                                "if": {"$eq": ["$type", RelationshipType.settled]},
+                                "then": {"$arrayElemAt": ["$conversations._id", 0]},
+                                "else": None,
+                            }
+                        },
+                    }
+                },
             ]
         ).to_list()
 
@@ -288,6 +370,11 @@ class RelationshipService(BaseService):
                 "prohibited_operation",
             )
 
-        await Relationship.find_one(
-            Relationship.id == relationship_id,
-        ).delete(session=self._current_session)
+        async with self.transaction():
+            await Relationship.find_one(
+                Relationship.id == relationship_id,
+            ).delete(session=self._current_session)
+
+            await Conversation.find_one(
+                Conversation.id == relationship["conversation_id"]
+            ).delete(session=self._current_session)
