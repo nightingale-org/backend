@@ -311,6 +311,12 @@ class RelationshipService(BaseService):
                     }
                 },
                 {
+                    "$unwind": "$initiator",
+                },
+                {
+                    "$unwind": "$target",
+                },
+                {
                     "$lookup": {
                         "from": get_collection_name_from_model(Conversation),
                         "let": {"target_user_id": "$target._id"},
@@ -336,20 +342,6 @@ class RelationshipService(BaseService):
                     }
                 },
                 {
-                    "$unwind": "$initiator",
-                },
-                {
-                    "$unwind": "$target",
-                },
-                {
-                    "$match": {
-                        "$or": [
-                            {"initiator.email": user_email},
-                            {"target.email": user_email},
-                        ]
-                    }
-                },
-                {
                     "$project": {
                         "_id": 1,
                         "conversation_id": {
@@ -364,11 +356,13 @@ class RelationshipService(BaseService):
             ]
         ).to_list()
 
-        if not relationship:
+        try:
+            relationship = relationship[0]
+        except IndexError:
             raise BusinessLogicError(
                 "You can't delete a relationship that you are not a part of.",
                 "prohibited_operation",
-            )
+            ) from None
 
         async with self.transaction():
             await Relationship.find_one(
