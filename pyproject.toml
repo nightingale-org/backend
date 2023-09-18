@@ -43,7 +43,7 @@ faker = "^19.3.0"
 pytest-pretty = "^1.2.0"
 better-exceptions = "^0.3.3"
 rich = "^13.4.1"
-setuptools = "^68.0.0"
+setuptools = "^68.2.2"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
