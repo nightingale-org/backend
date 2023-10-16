@@ -12,7 +12,7 @@ uvicorn = { version = "^0.23.2", extras = ["standard"] }
 python-dateutil = "^2.8.2"
 python-dotenv = "^1.0.0"
 itsdangerous = "^2.1.2"
-orjson = "^3.9.1"
+orjson = "^3.9.9"
 email-validator = "^2.0.0.post2"
 beanie = "^1.21.0"
 starlette-context = "^0.3.6"
